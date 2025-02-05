@@ -64,6 +64,14 @@ Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**,
    - Choose your **Game Path**, **Trainer Path**, and any extra DLLs/EXEs.  
    - (Optional) **Save a Profile** and enable **Auto Launcher**.  
    - Finally, hit **Launch**.
+  
+ 🚀 **Quick Tip for Steam Deck Users!** 🎮  
+
+If you're using **WINE/Proton** and can't find your Steam games, create a **symlink** to make them easily accessible:  
+
+```sh
+ln -s ~/.steam/steam/steamapps/common ~/STEAMGAMES
+```
 
 ---
 
