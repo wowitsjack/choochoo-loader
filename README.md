@@ -1,138 +1,155 @@
 # ChooChoo
 
-ChooChoo is a Proton/WINE gaming focused trainer and DLL loader featuring a dynamic UI and extensive functionality. Designed for seamless operation under both Windows and Proton/Wine environments, it provides users with an intuitive way to manage and launch games, trainers, and additional executables or DLLs.
+**ChooChoo** is a Proton/WINE gaming-focused trainer and DLL loader featuring a dynamic UI and extensive functionality. It operates seamlessly under both Windows and Proton/WINE environments, providing users with an intuitive way to manage and launch games, trainers, patchers, or additional DLLs.
 
-It is designed for launching trainers (FLiNG etc), patchers, and ensuring that they can all be recognised and see each other in the Proton/WINE context, and perform the memory access required to load cheats, or do DLL injection.
+<p align="center">
+    <img src="choochoo.png" width="50%">
+</p>
 
-### 📥 Download ChooChoo
+---
 
-Get the latest version of **ChooChoo** from the official releases page on GitHub. Click the big green button below to download:
+## Download ChooChoo
+
+Get the latest version of **ChooChoo** from the official releases page on GitHub. Click the button below to download:
 
 [![Download ChooChoo](https://img.shields.io/badge/Download-ChooChoo-success?style=for-the-badge&logo=github)](https://github.com/wowitsjack/choochoo-loader/releases)
 
+---
 
-### HOW-TO (Steam Deck):
+## HOW-TO (Steam Deck)
 
-### Adding ChooChoo to Steam:
+### Adding ChooChoo to Steam
 
-- Open **Steam** on your **Steam Deck** in Desktop Mode.  
-- Navigate to **Games** and select **Add a Non-Steam Game to My Library**.  
-- Browse to `choochoo.exe` and add it to your library.  
+1. Switch your **Steam Deck** to **Desktop Mode**.
+2. Open **Steam** in Desktop Mode.
+3. Navigate to **Games** and select **Add a Non-Steam Game to My Library**.
+4. Browse to locate `choochoo.exe` and add it to your library.
 
-### Launching ChooChoo:
+### Launching ChooChoo
 
-- Open **Properties** for **ChooChoo** in your Steam Library.  
-- Enable **Compatibility Mode** and select a Proton version (Proton 9+ is recommended).  
-- Launch **ChooChoo** from your Steam Library.
+1. Open **Properties** for **ChooChoo** in your Steam Library.
+2. Enable **Force the use of a specific Steam Play compatibility tool** (Compatibility Mode).
+3. Select a Proton version (Proton 9+ recommended).
+4. Launch **ChooChoo** from your Steam Library.
 
-  
+---
 
-### HOW-TO (macOS with Whisky):
+## HOW-TO (macOS with Whisky)
 
-### Adding ChooChoo to Whisky:
+### Adding ChooChoo to Whisky
 
-- Install **Whisky** on your **macOS** system if you have not already.  
-- Open **Whisky** and create a new **bottle**.  
-- Inside the bottle, use the **"Run Executable"** option to browse to `choochoo.exe` and add it.  
+1. Install **Whisky** on macOS if you have not already.
+2. Open **Whisky** and create a new **bottle**.
+3. Inside the bottle, use **"Run Executable"** to browse for `choochoo.exe` and add it.
 
-### Launching ChooChoo:
+### Launching ChooChoo
 
-- Open **Whisky** and select the bottle where **ChooChoo** is installed.  
-- Enable **DXVK and other compatibility settings** if needed.  
-- Click **Run** to launch **ChooChoo** inside Whisky.  
+1. Open **Whisky** and select the bottle where **ChooChoo** is installed.
+2. Enable **DXVK** and any other necessary compatibility settings.
+3. Click **Run** to launch **ChooChoo** inside Whisky.
 
+---
 
+## Automate Game & Trainer Launching
+
+ChooChoo can automate launching both a **game** and **trainer**, eliminating the need for manual setup each time. After configuring, simply launch ChooChoo from Steam, and it will automatically start all processes.
+
+### Setting Up ChooChoo in Steam
+
+1. **Add ChooChoo as a Non-Steam Game**  
+   - Open **Steam** (on your Steam Deck or desktop).
+   - Go to **Games** > **Add a Non-Steam Game to My Library**.
+   - Browse for `choochoo.exe` and add it.
+
+2. **Create a Profile for Your Game & Trainer**  
+   - Launch **ChooChoo** from your Steam Library.
+   - In the main UI, set the **Game Path** to your game’s executable.
+   - Set the **Trainer Path** to your trainer’s executable.
+   - (Optional) Add any additional EXEs or DLLs for patching or injection.
+   - Save the configuration as a **profile** for quick reloading.
+
+3. **Enable Auto-Launch**  
+   - Check the **Auto Launcher** box to automatically run the last-used configuration at startup.
+   - Close or exit ChooChoo to save your settings.
+
+### Automatic Launching
+
+- Whenever you start **ChooChoo** from Steam, it will automatically launch your **game, trainer, and additional executables**.
+- A countdown will appear, allowing you to cancel or modify settings before launching.
+- If needed, cancel the countdown to make changes or switch profiles.
+
+Once set up, simply opening **ChooChoo** from Steam will instantly load your game, trainer, and any extra processes—providing a smooth, efficient workflow.
+
+---
+
+## Bonus: Customize the ChooChoo Launcher with SteamGridDB Plugin
+
+Take your customization further on the Steam Deck by using the **SteamGridDB** Plugin. This plugin lets you add custom artwork to your **ChooChoo** launcher for a more polished look.
+
+## Renaming the Launcher in Steam
+
+To ensure a consistent look:
+
+1. Open your **Steam Library**.
+2. Locate **ChooChoo** (the non-Steam game entry you added).
+3. Right-click (or press the options button) and select **Properties**.
+4. Under the **Shortcut** tab, rename it (e.g., **ChooChoo Trainer** or any preferred title).
+
+Your Steam Library will now display this launcher with a name and artwork that match your style.
+
+### 1. Install Decky Loader
+
+- Follow the instructions on the Decky Loader GitHub page to install it onto your Steam Deck.
+
+### 2. Install the SteamGridDB Plugin
+
+1. On your Steam Deck, open the **Quick Access Menu**.
+2. Navigate to the **Plugins** section and browse the Plugin Store.
+3. Search for **SteamGridDB** and install it.
+
+### 3. Customize ChooChoo Artwork
+
+1. After installing the plugin, open it from the **Quick Access Menu**.
+2. Select the **ChooChoo** entry (the one you added as a non-Steam game).
+3. Browse and download high-quality custom artwork, including:
+   - **Grid** images
+   - **Hero** images
+   - **Icons**
+4. Apply the artwork to make your ChooChoo launcher visually match your desired theme.
+
+---
 
 ## Features
 
 - **Game & Trainer Launching**  
-  Easily configure and launch a game alongside a trainer.
-
-- **Multiple Additional EXEs/DLLs**  
-  Supports launching up to 5 additional executables or dynamically loading DLLs into the current process.
-
+  Configure and launch both a game executable and a trainer simultaneously.
+- **Multiple Additional Executables/DLLs**  
+  Launch or inject up to **5 additional EXEs/DLLs** into the current process.
 - **Profile System**  
-  - Save and load multiple profiles for different configurations.
-  - Editable combo box for quick profile selection.
-  - Profiles are stored in the `profiles` folder.
-
+  - Save multiple **profiles** with different setups.
+  - Easily switch profiles using an **editable combo box**.
+  - Profiles are stored in the `profiles` folder for organization.
 - **Auto Launcher**  
-  - Automatically launches the last-used configuration on startup.
-  - Displays a countdown modal with a cancel option.
+  - Automatically loads and runs the last-used configuration on startup.
+  - Displays a **countdown modal** that can be canceled if you need to intervene.
   - Saves current settings to `profiles/last.ini`.
-
 - **Recent Files (MRU) Support**  
-  - Remembers recently used game, trainer, and additional EXE/DLL paths.
-  - MRU entries are stored in `recent.ini`.
-
+  - Keeps a record of recently used paths (`recent.ini`) for quicker reconfiguration.
 - **Command Line Handling**  
-  - Parses full command-line input and determines the working directory dynamically.
-  - Supports launching `.bat`, `.cmd`, and `.com` scripts via `cmd.exe /C`.
+  - Parses command-line input, dynamically setting the working directory.
+  - Supports running batch/scripts (`.bat`, `.cmd`, `.com`) via `cmd.exe /C`.
   - Loads `.dll` files using `LoadLibraryW`.
+- **UI Compatibility for Wine/Proton**  
+  - Custom GroupBox fixes for improved rendering under Wine/Proton.
+  - Uses `CreateJobObjectW` to ensure all launched processes are terminated when ChooChoo exits.
 
-- **Windows UI with Proton/Wine Compatibility**  
-  - Custom UI with GroupBox background fixes for Wine/Proton.
-  - Uses `CreateJobObjectW` to ensure all launched processes terminate on exit.
+---
 
 ## Compilation
 
-ChooChoo is designed to be compiled with `gcc` (MinGW) and requires Windows libraries.
+ChooChoo is intended to be compiled with **MinGW GCC** and Windows API libraries.
 
-### **Build Instructions (MinGW GCC)**
-
+### Build Instructions (MinGW GCC)
 ```sh
 gcc choochoo.c -mwindows -o choochoo.exe -lcomctl32 -lshlwapi
 ```
-
-### **Build Dependencies**
-- Windows API (`windows.h`)
-- Common Controls Library (`comctl32.lib`)
-- Shell API (`shlwapi.lib`)
-
-## Usage
-
-1. **Run `choochoo.exe`**  
-   Launches the main UI where you can configure game, trainer, and additional executables.
-
-2. **Select Paths**  
-   - Use the **Game Path** and **Trainer Path** fields to set the primary executable files.
-   - Add up to **5 additional EXEs or DLLs**, enabling/disabling them as needed.
-
-3. **Profiles**  
-   - Save and load profiles from the right-side **Profiles** panel.
-   - Click **Refresh** to reload the available profile list.
-
-4. **Auto Launching**  
-   - Enable the **Auto Launcher** checkbox to automatically start the last-used configuration.
-   - The auto-launch countdown can be canceled before execution.
-
-5. **Launching**  
-   - Press the **Launch** button to start the configured game, trainer, and additional processes.
-   - Status logs indicate success (`LAUNCHED`) or failure (`FAILED`).
-
-## File Structure
-
-```
-ChooChoo/
-│── choochoo.exe             # Compiled executable
-│── choochoo.c               # Source code
-│── profiles/                # Saved profiles folder
-│   ├── last.ini             # Auto-launch profile
-│   ├── custom_profile.ini   # User-created profiles
-│── recent.ini               # MRU (Most Recently Used) paths
-│── autolaunch.ini           # Stores auto-launch settings
-```
-
-## License
-
-This project is open-source under the **MIT License**.
-
-## Notes
-
-- **Proton/Wine Compatibility**: ChooChoo includes UI fixes for Wine-based environments, ensuring better rendering of group boxes.
-- **MRU Handling**: The application maintains a history of previously used paths for quick access.
-- **Process Cleanup**: Uses Windows Job Objects to ensure all launched processes are terminated when the main application exits.
-
-## Contributing
-
-Contributions are welcome! Feel free to submit issues, pull requests, or feature requests.
