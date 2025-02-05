@@ -1,4 +1,4 @@
-# ChooChoo
+# ChooChoo Trainer Loader for Proton and WINE.
 
 **ChooChoo** is a Proton/WINE gaming-focused trainer and DLL loader featuring a dynamic UI and extensive functionality. It operates seamlessly under both Windows and Proton/WINE environments, providing users with an intuitive way to manage and launch games, trainers, patchers, or additional DLLs.
 
