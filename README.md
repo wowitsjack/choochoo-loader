@@ -20,17 +20,37 @@ Get the latest version of **ChooChoo** from the official releases page on GitHub
 
 ### Adding ChooChoo to Steam
 
-1. Switch your **Steam Deck** to **Desktop Mode**.
-2. Open **Steam** in Desktop Mode.
-3. Navigate to **Games** and select **Add a Non-Steam Game to My Library**.
-4. Browse to locate `choochoo.exe` and add it to your library.
+1. Switch your **Steam Deck** to **Desktop Mode**.  
+2. Open **Steam** in Desktop Mode.  
+3. Navigate to **Games** and select **Add a Non-Steam Game to My Library**.  
+4. Browse to locate `choochoo.exe` and add it to your library.  
 
 ### Launching ChooChoo
 
-1. Open **Properties** for **ChooChoo** in your Steam Library.
-2. Enable **Force the use of a specific Steam Play compatibility tool** (Compatibility Mode).
-3. Select a Proton version (Proton 9+ recommended).
-4. Launch **ChooChoo** from your Steam Library.
+1. Open **Properties** for **ChooChoo** in your Steam Library.  
+2. Enable **Force the use of a specific Steam Play compatibility tool** (Compatibility Mode).  
+3. Select a Proton version (Proton 9+ recommended).  
+4. Launch **ChooChoo** from your Steam Library.  
+
+### Configuring ChooChoo
+
+**Select Your Game & Trainer**  
+- Click **Browse…** next to **Game Path** and select your game’s executable (`game.exe`).  
+- Click **Browse…** next to **Trainer Path** and select your trainer (`trainer.exe`).  
+
+**Add Additional EXEs or DLLs (Optional)**  
+- Click **Browse…** under **Additional EXEs/DLLs** to add up to 5 extra executables or DLLs.  
+- Check the **Launch** box for each file you want to run automatically.  
+
+**Save Your Configuration as a Profile**  
+- In the **Profiles** section, type a profile name or select an existing one.  
+- Click **Save** to store your settings for easy reloading.  
+
+**Enable Auto Launcher (Optional)**  
+- Check **Auto Launcher** to automatically launch your last-used profile when ChooChoo starts.  
+
+**Click Launch!**  
+- Press the **Launch** button to start your game, trainer, and additional executables.  
 
 ---
 
@@ -38,17 +58,36 @@ Get the latest version of **ChooChoo** from the official releases page on GitHub
 
 ### Adding ChooChoo to Whisky
 
-1. Install **Whisky** on macOS if you have not already.
-2. Open **Whisky** and create a new **bottle**.
-3. Inside the bottle, use **"Run Executable"** to browse for `choochoo.exe` and add it.
+1. Install **Whisky** on macOS if you have not already.  
+2. Open **Whisky** and create a new **bottle**.  
+3. Inside the bottle, use **"Run Executable"** to browse for `choochoo.exe` and add it.  
 
 ### Launching ChooChoo
 
-1. Open **Whisky** and select the bottle where **ChooChoo** is installed.
-2. Enable **DXVK** and any other necessary compatibility settings.
-3. Click **Run** to launch **ChooChoo** inside Whisky.
+1. Open **Whisky** and select the bottle where **ChooChoo** is installed.  
+2. Enable **DXVK** and any other necessary compatibility settings.  
+3. Click **Run** to launch **ChooChoo** inside Whisky.  
 
----
+### Configuring ChooChoo
+
+**Select Your Game & Trainer**  
+- Click **Browse…** next to **Game Path** and select your game’s executable (`game.exe`).  
+- Click **Browse…** next to **Trainer Path** and select your trainer (`trainer.exe`).  
+
+**Add Additional EXEs or DLLs (Optional)**  
+- Click **Browse…** under **Additional EXEs/DLLs** to add up to 5 extra executables or DLLs.  
+- Check the **Launch** box for each file you want to run automatically.  
+
+**Save Your Configuration as a Profile**  
+- In the **Profiles** section, type a profile name or select an existing one.  
+- Click **Save** to store your settings for easy reloading.  
+
+**Enable Auto Launcher (Optional)**  
+- Check **Auto Launcher** to automatically launch your last-used profile when ChooChoo starts.  
+
+**Click Launch!**  
+- Press the **Launch** button to start your game, trainer, and additional executables.  
+
 
 ## Automate Game & Trainer Launching
 
@@ -123,22 +162,28 @@ Your Steam Library will now display this launcher with a name and artwork that m
 
 - **Game & Trainer Launching**  
   Configure and launch both a game executable and a trainer simultaneously.
+  
 - **Multiple Additional Executables/DLLs**  
   Launch or inject up to **5 additional EXEs/DLLs** into the current process.
-- **Profile System**  
+  
+- **Profile System**
   - Save multiple **profiles** with different setups.
   - Easily switch profiles using an **editable combo box**.
   - Profiles are stored in the `profiles` folder for organization.
+    
 - **Auto Launcher**  
   - Automatically loads and runs the last-used configuration on startup.
   - Displays a **countdown modal** that can be canceled if you need to intervene.
   - Saves current settings to `profiles/last.ini`.
+    
 - **Recent Files (MRU) Support**  
   - Keeps a record of recently used paths (`recent.ini`) for quicker reconfiguration.
+    
 - **Command Line Handling**  
   - Parses command-line input, dynamically setting the working directory.
   - Supports running batch/scripts (`.bat`, `.cmd`, `.com`) via `cmd.exe /C`.
   - Loads `.dll` files using `LoadLibraryW`.
+    
 - **UI Compatibility for Wine/Proton**  
   - Custom GroupBox fixes for improved rendering under Wine/Proton.
   - Uses `CreateJobObjectW` to ensure all launched processes are terminated when ChooChoo exits.
@@ -147,9 +192,36 @@ Your Steam Library will now display this launcher with a name and artwork that m
 
 ## Compilation
 
+### Build Dependencies
+
+- **Windows API** (`windows.h`)
+- **Common Controls Library** (`comctl32.lib`)
+- **Shell API** (`shlwapi.lib`)
+
+---
+
 ChooChoo is intended to be compiled with **MinGW GCC** and Windows API libraries.
 
 ### Build Instructions (MinGW GCC)
 ```sh
 gcc choochoo.c -mwindows -o choochoo.exe -lcomctl32 -lshlwapi
 ```
+
+# ChooChoo - Proton/WINE Trainer/DLL Loader
+
+[![GitHub release](https://img.shields.io/github/v/release/wowitsjack/choochoo-loader?style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases)
+[![License](https://img.shields.io/github/license/wowitsjack/choochoo-loader?style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/wowitsjack/choochoo-loader/total?color=green&style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases)
+
+---
+
+## License
+
+### MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
