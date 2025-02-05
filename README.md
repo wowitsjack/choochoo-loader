@@ -1,20 +1,6 @@
 # **🚂 ChooChoo**  
 **Proton/WINE Trainer & DLL Loader**  
-A sleek, gaming-focused tool that elegantly handles launches of games with trainers/mods (FLiNG, WeMod, etc.), patches, and up to 5 extra executables or DLLs.
-
-### **Why is this Needed for Proton/WINE?**  
-
-Running game trainers, patches, and DLL injectors in **Proton** or **WINE** can be problematic due to compatibility issues, anti-cheat false positives, and differences in Windows API implementations. Many game trainers and mods rely on system calls that work natively on Windows but fail under Proton/WINE.  
-
-**ChooChoo** solves these issues by:  
-✅ **Ensuring Proper Trainer Execution** – Many trainers rely on system-level hooks and memory modifications that fail in WINE. ChooChoo makes sure they load properly.  
-✅ **DLL Injection Support** – Some patches, mods, or debuggers need to inject DLLs into the game process, which can fail in WINE without proper handling.  
-✅ **Multiple Executable Launching** – Games requiring launchers, mod frameworks, or patches alongside the main executable can be difficult to set up in Proton.  
-✅ **Proton/WINE UI Compatibility Fixes** – Prevents common graphical/UI bugs that occur when running trainers in a non-native Windows environment.  
-✅ **Seamless Steam Deck Integration** – Works effortlessly with Steam’s Proton compatibility layer, making it easy to add trainers and patches on the go.  
-
-Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**, **ChooChoo** makes sure that your trainers, DLLs, and patches run just...work.
-
+A sleek, gaming-focused tool that elegantly handles launches of games with trainers/mods (FLiNG, WeMod, etc.), patches, and up to 5 extra executables or DLLs, bypassing the issues of launching mods/patches in WINE/Proton enviroments.
 
 <p align="center">
   <img src="choochoo.png" width="40%" alt="ChooChoo Logo" />
@@ -29,6 +15,22 @@ Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**,
 [![GitHub Releases](https://img.shields.io/github/release/wowitsjack/choochoo-loader/all.svg?style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases)  
 [![Platforms: Windows | macOS | Linux | Steam Deck](https://img.shields.io/badge/Platforms-Windows%20|%20macOS%20|%20Linux%20|%20Steam%20Deck-blue?style=for-the-badge&logo=steam)](https://github.com/wowitsjack/choochoo-loader)  
 [![Downloads](https://img.shields.io/github/downloads/wowitsjack/choochoo-loader/total.svg?color=blue&style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases)  
+
+---
+
+
+### **Why is this Needed for Proton/WINE?**  
+
+Running game trainers, patches, and DLL injectors in **Proton** or **WINE** can be problematic due to compatibility issues, anti-cheat false positives, and differences in Windows API implementations. Many game trainers and mods rely on system calls that work natively on Windows but fail under Proton/WINE.  
+
+**ChooChoo** solves these issues by:  
+✅ **Ensuring Proper Trainer Execution** – Many trainers rely on system-level hooks and memory modifications that fail in WINE. ChooChoo makes sure they load properly.  
+✅ **DLL Injection Support** – Some patches, mods, or debuggers need to inject DLLs into the game process, which can fail in WINE without proper handling.  
+✅ **Multiple Executable Launching** – Games requiring launchers, mod frameworks, or patches alongside the main executable can be difficult to set up in Proton.  
+✅ **Proton/WINE UI Compatibility Fixes** – Prevents common graphical/UI bugs that occur when running trainers in a non-native Windows environment.  
+✅ **Seamless Steam Deck Integration** – Works effortlessly with Steam’s Proton compatibility layer, making it easy to add trainers and patches on the go.  
+
+Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**, **ChooChoo** makes sure that your trainers, DLLs, and patches run just...work.
 
 ---
 
