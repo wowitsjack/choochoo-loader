@@ -23,6 +23,7 @@ A sleek, gaming-focused tool that elegantly handles launches of games with train
 Running game trainers, patches, and DLL injectors in **Proton** or **WINE** can be problematic due to compatibility issues, anti-cheat false positives, and differences in Windows API implementations. Many game trainers and mods rely on system calls that work natively on Windows but fail under Proton/WINE.  
 
 **ChooChoo** solves these issues by:  
+
 ✅ **Ensuring Proper Trainer Execution** – Many trainers rely on system-level hooks and memory modifications that fail in WINE. ChooChoo makes sure they load properly.  
 
 ✅ **DLL Injection Support** – Some patches, mods, or debuggers need to inject DLLs into the game process, which can fail in WINE without proper handling.  
