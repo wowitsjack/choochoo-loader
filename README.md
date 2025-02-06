@@ -107,8 +107,14 @@ If trainers like **WeMod** aren’t working, remove **Wine-Mono** and install .N
 
 1. Open **Heroic Launcher**  
 2. Go to **Your Game** → **Config/Settings**  
-3. Click **Run EXE**  
-4. Install .NET here from the official installer.  
+3. Click **Winetricks**  → **Open WineTricks GUI**
+4. Choose **Select the Default Prefix**
+5. Click on **Run Uninstaller**
+6. Remove **Wine Mono Windows Support**
+7. Press **OK** to return to the WineTricks GUI
+8. Select **Run an arbitrary executable (.exe/.msi/msu)** and use this to install .NET from the official installer.
+
+   (You'll want .NET 4.7.1 for WeMod)
 
 Now trainers like **WeMod** should work properly on Steam Deck.
 
