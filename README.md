@@ -72,6 +72,41 @@ If you're using **WINE/Proton** and can't find your Steam games, create a **syml
 ```sh
 ln -s ~/.steam/steam/steamapps/common ~/STEAMGAMES
 ```
+## WeMod/Trainer Not Launching (Fix) (Proton/WINE)  
+
+If trainers like **WeMod** aren’t working, remove **Wine-Mono** and install .NET instead using **Protontricks** or **Heroic Launcher**.  
+
+### Using Protontricks  
+
+1. Install Protontricks (if not installed)  
+   ```flatpak install com.github.Matoking.protontricks``` 
+
+2. Open Protontricks & Select Your Game  
+   ```protontricks --gui```  or launch it from the menu in Desktop mode.
+   - Select your **game/trainer bottle**  
+   - Choose **Run Wine Control Panel**  
+
+3. Uninstall Wine-Mono  
+   - In **Control Panel**, go to **Add/Remove Programs**  
+   - Find **Wine Mono Windows Support**  
+   - Click **Uninstall** and follow the prompts  
+
+4. Install .NET Framework (if needed)  
+   - Download .NET from **Microsoft’s official site**  
+   - Inside Protontricks, select **Run Wine File Manager**  
+   - Run the .NET installer inside the Wine bottle  
+
+---
+
+### Using Heroic Launcher  
+
+1. Open **Heroic Launcher**  
+2. Go to **Wine Manager** → **Wine Tools**  
+3. Click **Run Wine Control Panel**  
+4. Follow steps 3-4 from the Protontricks method  
+
+Now trainers like **WeMod** should work properly on Steam Deck.
+
 
 ---
 
@@ -89,6 +124,36 @@ ln -s ~/.steam/steam/steamapps/common ~/STEAMGAMES
    - Press **Run** to start ChooChoo.  
    - Inside ChooChoo, set **Game Path**, **Trainer Path**, and extras.  
    - **Launch** to start your game + trainer simultaneously.
+  
+If trainers like **WeMod** are not working properly in **WINE/Whisky**, removing **Wine-Mono** and installing the official **.NET Framework** can help.  
+
+## WeMod/Trainer Not Launching (Fix) (Proton/WINE) 
+
+ **Open Whisky** 🍷  
+   - Launch **Whisky** on macOS.  
+
+ **Go to Bottle Configuration** ⚙️  
+   - Open your game/trainer's **bottle** in Whisky and hit Bottle Configuration.  
+
+ **Open Control Panel** 🖥️  
+   - Inside the bottle, open **Control Panel**.  
+
+ **Uninstall Wine-Mono** 🚫  
+   - In **Control Panel**, go to **Applications** or **Add/Remove Programs**.  
+   - Find **Wine Mono Windows Support**.  
+   - Click **Uninstall** and follow the prompts.  
+
+### **🔄 Install .NET Framework (Manually)**  
+
+Since some trainers require .NET, download and install it manually:  
+
+1. **Download the .NET Framework** from [Microsoft’s official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).  
+2. Inside Whisky, **run the .NET installer** inside the bottle.  
+3. Follow the installation steps as you would on Windows.  
+
+(WeMod will want .NET 4.7.1)
+
+After this, **WeMod and other trainers** should now work correctly in **WINE/Proton on macOS**! 🚀🎮  
 
 ---
 
