@@ -34,7 +34,7 @@ Running game trainers, patches, and DLL injectors in **Proton** or **WINE** can 
 
 ✅ **Seamless Steam Deck Integration** – Works effortlessly with Steam’s Proton compatibility layer, making it easy to add trainers and patches on the go.  
 
-Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**, **ChooChoo** makes sure that your trainers, DLLs, and patches run just...work.
+Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**, **ChooChoo** makes sure that your trainers, DLLs, and patches just...work.
 
 ---
 
