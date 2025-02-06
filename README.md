@@ -6,6 +6,9 @@ A sleek, gaming-focused tool that elegantly handles launches of games with train
   <img src="choochoo.png" width="40%" alt="ChooChoo Logo" />
 </p>
 
+<p align="center">
+  <img src="choochoo.gif" alt="Optimized GIF">
+</p>
 ---
 
 ## **Download & Links**
