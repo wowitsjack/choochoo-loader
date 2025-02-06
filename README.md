@@ -130,9 +130,9 @@ Now trainers like **WeMod** should work properly on Steam Deck.
    - Inside ChooChoo, set **Game Path**, **Trainer Path**, and extras.  
    - **Launch** to start your game + trainer simultaneously.
   
-If trainers like **WeMod** are not working properly in **WINE/Whisky**, removing **Wine-Mono** and installing the official **.NET Framework** can help.  
+If trainers like **WeMod** are not working properly in **CrossOver/Whisky**, removing **Wine-Mono** and installing the official **.NET Framework** can help.  
 
-## WeMod/Trainer Not Launching (Fix) (Proton/WINE) 
+## WeMod/Trainer Not Launching (Fix) (macOS) 
 
  **Open Whisky** 🍷  
    - Launch **Whisky** on macOS.  
@@ -148,7 +148,7 @@ If trainers like **WeMod** are not working properly in **WINE/Whisky**, removing
    - Find **Wine Mono Windows Support**.  
    - Click **Uninstall** and follow the prompts.  
 
-### **🔄 Install .NET Framework (Manually)**  
+### **Install .NET Framework (Manually)**  
 
 Since some trainers require .NET, download and install it manually:  
 
@@ -158,7 +158,7 @@ Since some trainers require .NET, download and install it manually:
 
 (WeMod will want .NET 4.7.1)
 
-After this, **WeMod and other trainers** should now work correctly in **WINE/Proton on macOS**! 🚀🎮  
+After this, **WeMod and other trainers** should now work correctly in **WINE/Proton on macOS**  
 
 ---
 
