@@ -97,8 +97,8 @@ If trainers like **WeMod** aren’t working, remove **Wine-Mono** and install .N
    - Click **Uninstall** and follow the prompts  
 
 4. Install .NET Framework (if needed)  
-   - Download .NET from **Microsoft’s official site**  
-   - Inside Protontricks, select **Run Wine File Manager**  
+   - Download .NET from **Microsoft’s official site**  (You'll want .NET 4.7.1 if you're using WeMod)
+   - Inside Protontricks, select **Run Wine File Manager** or **Run EXE** 
    - Run the .NET installer inside the Wine bottle  
 
 ---
@@ -134,16 +134,16 @@ If trainers like **WeMod** are not working properly in **CrossOver/Whisky**, rem
 
 ## WeMod/Trainer Not Launching (Fix) (macOS) 
 
- **Open Whisky** 🍷  
+ **Open Whisky**   
    - Launch **Whisky** on macOS.  
 
- **Go to Bottle Configuration** ⚙️  
+ **Go to Bottle Configuration**   
    - Open your game/trainer's **bottle** in Whisky and hit Bottle Configuration.  
 
- **Open Control Panel** 🖥️  
+ **Open Control Panel**   
    - Inside the bottle, open **Control Panel**.  
 
- **Uninstall Wine-Mono** 🚫  
+ **Uninstall Wine-Mono**  
    - In **Control Panel**, go to **Applications** or **Add/Remove Programs**.  
    - Find **Wine Mono Windows Support**.  
    - Click **Uninstall** and follow the prompts.  
