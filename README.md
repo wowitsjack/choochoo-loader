@@ -99,10 +99,12 @@ If trainers like **WeMod** aren’t working, remove **Wine-Mono** and install .N
    - Find **Wine Mono Windows Support**  
    - Click **Uninstall** and follow the prompts  
 
-4. Install .NET Framework (if needed)  
+4. Install .NET Framework (if needed)
+   - Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.
    - Download .NET from **Microsoft’s official site**  (You'll want .NET 4.7.1 if you're using WeMod)
    - Inside Protontricks, select **Run Wine File Manager** or **Run EXE** 
-   - Run the .NET installer inside the Wine bottle  
+   - Run the .NET installer inside the Wine bottle
+   - Set your Bottle's Windows Version back to Windows 10 using the Wine Control Panel. 
 
 ---
 
@@ -153,17 +155,21 @@ If trainers like **WeMod** are not working properly in **CrossOver/Whisky**, rem
    - Inside the bottle, open **Control Panel**.  
 
  **Uninstall Wine-Mono**  
-   - In **Control Panel**, go to **Applications** or **Add/Remove Programs**.  
+   - In **Control Panel**, go to **Applications** or **Add/Remove Programs**.
+   - Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.
    - Find **Wine Mono Windows Support**.  
-   - Click **Uninstall** and follow the prompts.  
+   - Click **Uninstall** and follow the prompts.
 
 ### **Install .NET Framework (Manually)**  
 
 Since some trainers require .NET, download and install it manually:  
 
-1. **Download the .NET Framework** from [Microsoft’s official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).  
-2. Inside Whisky, **run the .NET installer** inside the bottle.  
-3. Follow the installation steps as you would on Windows.  
+1. **Download the .NET Framework** from [Microsoft’s official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).
+2. Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel. 
+3. Inside Whisky, **run the .NET installer** inside the bottle.  
+4. Follow the installation steps as you would on Windows.
+5. Set your Bottle's Windows Version back to Windows 10 using the Wine Control Panel. 
+
 
 (WeMod will want .NET 4.7.1)
 
