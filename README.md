@@ -61,7 +61,7 @@ Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**,
 
 2. **Add ChooChoo to Steam**  
    - Open Steam on your Deck (in Desktop Mode).  
-   - Go to **Games** → **Add a Non-Steam Game to My Library** → Select `choochoo.exe`.
+   - Go to **Games** → **Add a Non-Steam Game to My Library** → Select `ChooChooApp.exe` or `ChooChooApp-DotNetBuiltIn.exe`.
 
 3. **Enable Proton**  
    - In your Steam Library, **right-click** on ChooChoo → **Properties** → **Compatibility**.  
@@ -133,7 +133,7 @@ Now trainers like **WeMod** should work properly on Steam Deck.
 
 2. **Create a Bottle & Add ChooChoo**  
    - In Whisky, create a new **bottle**.  
-   - Use **"Run Executable"** and pick `choochoo.exe` to place it in the bottle.
+   - Use **"Run Executable"** and pick `ChooChooApp.exe` or `ChooChooApp-DotNetBuiltIn.exe` to place it in the bottle.
 
 3. **Configure & Run**  
    - In the bottle’s settings, enable **DXVK** (and other needed compatibility tweaks).  
@@ -188,11 +188,37 @@ After this, **WeMod and other trainers** should now work correctly in **WINE/Pro
 
 ---
 
-## **Build & Compilation**
+🔥 New & Improved Features!
 
-ChooChoo is primarily built for Windows (or Wine/Proton).  
+🚀 DLL Injection Overhaul
 
-**Dependencies**  
-- Windows API (e.g., `windows.h`)  
-- Common Controls (`comctl32.lib`)  
-- Shell API (`shlwapi.lib`)
+Checks 32-bit/64-bit compatibility before injecting.
+Refuses mismatched DLLs (skips injection, logs an error).
+Real-time UI updates: each validated DLL is marked and displayed.
+Only logs each injection attempt once, preventing spam in the status box.
+
+🕹️ Refined XInput Handling
+
+Scoped controller input: no more unintentional global actions when certain popups or combos are focused.
+Properly interprets dpad vs. thumbstick movements, ignoring slight joystick drifts.
+Enhanced button mappings for easy menu navigation (e.g., A = Enter, B = Cancel, etc.).
+
+📜 Command-Line Enhancements
+
+-p "ProfileName": Loads a saved profile (paths, DLLs, etc.) on startup.
+-autolaunch: Starts the configured game automatically after a short delay.
+-dllinject [Dll1.dll] [Dll2.dll] ...: Injects specified DLLs (up to five), either absolute or relative paths.
+Logs a clear message if any specified DLL doesn't exist or if the limit of five is exceeded.
+
+🖥️ UI & Stability Improvements
+
+Windows Forms interface: simpler, more intuitive, drastically easier to maintain.
+Controlled list refresh: the DLL list only updates on demand (or after an injection event), preserving scroll position and preventing flicker.
+Robust error handling: handles missing files, incorrect bitness, or invalid profiles gracefully.
+
+🛠️ Fixes & Optimizations
+
+Launch button overlapping is resolved.
+DLL validation logs appear only once (preventing log spam).
+Auto-launch system improved: can be toggled in settings or triggered from command line.
+Profiles are automatically saved to profiles\last.ini on each launch, so your last-used config is always restored.
