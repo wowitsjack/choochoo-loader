@@ -8,12 +8,13 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.IO.Compression;
+using Microsoft.Win32;  // For registry access
 // Alias for System.Windows.Forms.Timer.
 using WinFormsTimer = System.Windows.Forms.Timer;
 
 namespace ChooChooApp
 {
-    // ----- XInput Definitions (fuck this lmao) -----
+    // ----- XInput Definitions -----
     public static class XInputConstants
     {
         public const ushort XINPUT_GAMEPAD_DPAD_UP = 0x0001;
@@ -142,7 +143,6 @@ namespace ChooChooApp
 
         // Timers.
         private WinFormsTimer xinputTimer;
-        // (No auto-refresh timer for DLL list)
         private WinFormsTimer injectionTimer;
         private WinFormsTimer arrowAnimationTimer;
         private double arrowAnimationTime;
@@ -163,7 +163,6 @@ namespace ChooChooApp
         private byte prevLeftTrigger, prevRightTrigger;
 
         // DLL validation tracking.
-        // Dictionary: key = full file path; value = true if validated successfully, false if not.
         private Dictionary<string, bool> validatedDlls;
 
         // Flags for modal popups.
@@ -511,7 +510,6 @@ namespace ChooChooApp
             listBoxDlls = new ListBox { Location = new Point(txtStatusLog.Right + 10, txtStatusLog.Top), Size = new Size(300, txtStatusLog.Height), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             mainTabPanel.Controls.Add(listBoxDlls);
 
-            // Split the DLL list buttons into Refresh and Export buttons.
             Button btnRefreshDlls = new Button { Text = "Refresh DLL List", Location = new Point(listBoxDlls.Left, listBoxDlls.Bottom + 5), Size = new Size(140, 30) };
             btnRefreshDlls.Click += (s, e) => RefreshDllList();
             mainTabPanel.Controls.Add(btnRefreshDlls);
@@ -520,7 +518,6 @@ namespace ChooChooApp
             btnExportDlls.Click += (s, e) => ExportDllList();
             mainTabPanel.Controls.Add(btnExportDlls);
 
-            // Move the launch panel further down (40 pixels below the status log)
             Panel panelLaunch = new Panel { Location = new Point(10, txtStatusLog.Bottom + 40), Size = new Size(1170, 50) };
             mainTabPanel.Controls.Add(panelLaunch);
 
@@ -535,7 +532,6 @@ namespace ChooChooApp
             xinputTimer.Tick += XinputTimer_Tick;
             xinputTimer.Start();
 
-            // No auto-refresh timer for DLL list.
             injectionTimer = new WinFormsTimer { Interval = 1000 };
             injectionTimer.Tick += InjectionTimer_Tick;
             injectionTimer.Start();
@@ -564,7 +560,6 @@ namespace ChooChooApp
                 return;
             }
             chkAdditional[index].Text = "Inject";
-            // When unchecked, unload previously validated DLL (log only once).
             if (!chkAdditional[index].Checked)
             {
                 if (!string.IsNullOrEmpty(additionalInjectedFile[index]) &&
@@ -577,7 +572,6 @@ namespace ChooChooApp
                 }
                 return;
             }
-            // If a new file is selected, unload previous validation.
             if (additionalInjectedFile[index] != file)
             {
                 if (!string.IsNullOrEmpty(additionalInjectedFile[index]) &&
@@ -588,7 +582,6 @@ namespace ChooChooApp
                 }
             }
             additionalInjectedFile[index] = file;
-            // Validate only once per injection attempt.
             if (!File.Exists(file))
             {
                 if (!validatedDlls.ContainsKey(file))
@@ -642,7 +635,6 @@ namespace ChooChooApp
                     fs.Seek(peOffset, SeekOrigin.Begin);
                     uint peHead = br.ReadUInt32();
                     ushort machine = br.ReadUInt16();
-                    // 0x014c = x86, 0x8664 = x64
                     return machine == 0x8664;
                 }
             }
@@ -1220,11 +1212,177 @@ namespace ChooChooApp
             return "";
         }
 
+        // =========================
+        // New methods for checking and installing .NET 6+ using embedded installer.
+        // These methods try multiple approaches.
+        // =========================
+
+        /// <summary>
+        /// Determines whether a valid .NET 6+ runtime (version ≥ 6.0.2) is installed.
+        /// It checks by running "dotnet --version", "dotnet --list-runtimes", and by reading registry keys.
+        /// </summary>
+        private static bool IsDotNet6InstalledIntelligently()
+        {
+            // 1. Try "dotnet --version"
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo("dotnet", "--version");
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                using (Process proc = Process.Start(psi)!)
+                {
+                    string output = proc.StandardOutput.ReadToEnd().Trim();
+                    proc.WaitForExit();
+                    if (Version.TryParse(output, out Version ver))
+                    {
+                        if (ver >= new Version("6.0.2"))
+                            return true;
+                    }
+                }
+            }
+            catch { }
+
+            // 2. Try "dotnet --list-runtimes"
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo("dotnet", "--list-runtimes");
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                using (Process proc = Process.Start(psi)!)
+                {
+                    string output = proc.StandardOutput.ReadToEnd().Trim();
+                    proc.WaitForExit();
+                    string[] lines = output.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var line in lines)
+                    {
+                        if (line.StartsWith("Microsoft.NETCore.App"))
+                        {
+                            // Expected format: "Microsoft.NETCore.App 6.0.8 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]"
+                            string remainder = line.Substring("Microsoft.NETCore.App".Length).Trim();
+                            string[] tokens = remainder.Split(' ');
+                            if (tokens.Length > 0)
+                            {
+                                if (Version.TryParse(tokens[0], out Version ver))
+                                {
+                                    if (ver >= new Version("6.0.2"))
+                                        return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // 3. Check registry keys in HKLM and HKCU.
+            if (CheckRegistryForDotNet6(Registry.LocalMachine))
+                return true;
+            if (CheckRegistryForDotNet6(Registry.CurrentUser))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks the specified registry root for installed versions of Microsoft.NETCore.App.
+        /// Returns true if any version ≥ 6.0.2 is found.
+        /// </summary>
+        private static bool CheckRegistryForDotNet6(RegistryKey root)
+        {
+            try
+            {
+                using (RegistryKey key = root.OpenSubKey(@"SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App"))
+                {
+                    if (key != null)
+                    {
+                        foreach (string subKeyName in key.GetSubKeyNames())
+                        {
+                            if (Version.TryParse(subKeyName, out Version ver))
+                            {
+                                if (ver >= new Version("6.0.2"))
+                                    return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        /// <summary>
+        /// Ensures that a valid .NET 6+ runtime is installed.
+        /// If not, runs the embedded installer.
+        /// </summary>
+        private static void EnsureDotNet6Installed()
+        {
+            if (!IsDotNet6InstalledIntelligently())
+            {
+                MessageBox.Show(".NET 6.0.2 or higher is required. The embedded installer will now run.", "Runtime Update Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                InstallDotNet();
+            }
+        }
+
+        /// <summary>
+        /// Extracts the embedded dotnet6.exe installer to a temporary file and runs it.
+        /// After installation, informs the user and exits.
+        /// </summary>
+        private static void InstallDotNet()
+        {
+            try
+            {
+                string tempInstallerPath = Path.Combine(Path.GetTempPath(), "dotnet6.exe");
+                // Since your folder/namespace is "ChooChooApp", the embedded resource name is "ChooChooApp.dotnet6.exe".
+                using (var stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("ChooChooApp.dotnet6.exe"))
+                {
+                    if (stream == null)
+                    {
+                        MessageBox.Show("Embedded installer not found.", "Installer Missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Environment.Exit(1);
+                    }
+                    using (var fileStream = new FileStream(tempInstallerPath, FileMode.Create, FileAccess.Write))
+                    {
+                        stream.CopyTo(fileStream);
+                    }
+                }
+
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = tempInstallerPath;
+                psi.UseShellExecute = true;
+                Process proc = Process.Start(psi)!;
+                proc.WaitForExit();
+                try { File.Delete(tempInstallerPath); } catch { }
+                if (proc.ExitCode != 0)
+                {
+                    MessageBox.Show("Embedded dotnet6 installer failed. Please install .NET 6.0.2 manually.", "Installation Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Environment.Exit(1);
+                }
+                else
+                {
+                    MessageBox.Show(".NET 6.0.2 installed successfully. Please restart the application.", "Installation Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Environment.Exit(0);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred while attempting to install .NET 6.0.2:\n" + ex.Message, "Installation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(1);
+            }
+        }
+
+        // =========================
+        // End of .NET 6+ check and installer methods.
+        // =========================
         #endregion
 
         [STAThread]
         static void Main()
         {
+            // Before running the main application, ensure that .NET 6+ is installed.
+            EnsureDotNet6Installed();
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());

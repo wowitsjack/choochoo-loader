@@ -8,7 +8,7 @@ using WinFormsTimer = System.Windows.Forms.Timer;
 namespace ChooChooApp
 {
     /// <summary>
-    /// A custom modal form for entering the Konami code.
+    /// A custom modal form for entering (what was originally the) Konami code until I got shitted off with Xinput lmao.
     /// The expected sequence is: U, R, D, L.
     /// Input is accepted via both keyboard and controller.
     /// The window has no title and forces focus so that its input is captured exclusively.

@@ -1,2 +1,2 @@
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\publish\ChooChooApp.pdb
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\publish\ChooChooApp.exe
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\publish\ChooChoo.pdb
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\publish\ChooChoo.exe

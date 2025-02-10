@@ -1,8 +1,3 @@
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChooApp.exe
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChooApp.deps.json
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChooApp.runtimeconfig.json
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChooApp.dll
-C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChooApp.pdb
 C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\Microsoft.CSharp.dll
 C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\Microsoft.VisualBasic.Core.dll
 C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\Microsoft.Win32.Primitives.dll
@@ -508,8 +503,14 @@ C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooAp
 C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooApp.AssemblyInfo.cs
 C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooApp.csproj.CoreCompileInputs.cache
 C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooApp.csproj.CopyComplete
-C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooApp.dll
-C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\refint\ChooChooApp.dll
-C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooApp.pdb
 C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChooApp.genruntimeconfig.cache
-C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ref\ChooChooApp.dll
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChoo.exe
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\icon.ico
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChoo.deps.json
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChoo.runtimeconfig.json
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChoo.dll
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\win-x64\ChooChoo.pdb
+C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChoo.dll
+C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\refint\ChooChoo.dll
+C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ChooChoo.pdb
+C:\Users\Admin\Desktop\ChooChooApp\obj\Release\net6.0-windows\win-x64\ref\ChooChoo.dll

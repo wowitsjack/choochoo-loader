@@ -4,10 +4,10 @@ using System.Windows.Forms;
 
 namespace ChooChooApp
 {
-    /// 
+    /// <summary>
     /// A modal form displaying the secret disclaimer.
     /// It shows two buttons: Agree (to continue to secret mode) and Disagree (to cancel).
-    /// 
+    /// </summary>
     public class SecretStatusForm : Form
     {
         private Label lblHeader = null!;

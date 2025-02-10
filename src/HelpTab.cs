@@ -4,11 +4,11 @@ using System.Windows.Forms;
 
 namespace ChooChooApp
 {
-    /// 
+    /// <summary>
     /// A UserControl that implements the Help page.
     /// It provides an overview of the application (without revealing any secret keyword).
     /// However, typing the magic password anywhere on this tab will trigger the secret :D.
-    /// 
+    /// </summary>
     public class HelpTab : UserControl
     {
         private string inputBuffer = "";

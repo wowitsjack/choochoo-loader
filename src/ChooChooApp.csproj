@@ -1,11 +1,42 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
+    <!-- Use Windows Forms (or WPF if you switch the flag) -->
     <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>WinExe</OutputType>
+
+    <!-- Target .NET 6 for Windows 10 x64 -->
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+
+    <!-- Application name and icon -->
+    <AssemblyName>ChooChoo</AssemblyName>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+
+    <!-- Single-file packaging without bundling the runtime -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+
+    <!-- Include native libraries in the single file -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+    <!-- Enable compression to reduce file size -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Remove trimming properties (PublishTrimmed and TrimMode) because trimming is not supported on WPF/WinForms -->
+    <!-- <PublishTrimmed>true</PublishTrimmed> -->
+    <!-- <TrimMode>link</TrimMode> -->
+
+    <!-- PublishReadyToRun can remain if desired, but note it may add some size -->
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Ensure the icon file is included -->
+    <None Include="icon.ico" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embed dotnet6.exe as a resource -->
+    <EmbeddedResource Include="dotnet6.exe" />
+  </ItemGroup>
 </Project>

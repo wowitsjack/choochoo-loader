@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "OkFq41Z1FmLAVLx6H6N96zw+JsyjrTrUenDSb3TGP4rBUoiI+n1fv1l4hLuQhSUu1HF7N53e6fOz5YNZ1R3Bbg==",
+  "dgSpecHash": "Ufv6BYopA3i6/Us6qciLPQVNeqH1QlmsnyLgJQBik6DaGYuO7/onps2Ugs3SvBxahmQVlCvd6Wf2dIq+nqMtvg==",
   "success": true,
   "projectFilePath": "C:\\Users\\Admin\\Desktop\\ChooChooApp\\ChooChooApp.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\6.0.36\\microsoft.netcore.app.runtime.win-x64.6.0.36.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\6.0.36\\microsoft.windowsdesktop.app.runtime.win-x64.6.0.36.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.36\\microsoft.aspnetcore.app.runtime.win-x64.6.0.36.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\6.0.36\\microsoft.netcore.app.crossgen2.win-x64.6.0.36.nupkg.sha512"
+  ],
   "logs": []
 }

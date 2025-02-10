@@ -1,0 +1,5 @@
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\publish\ChooChooApp.exe
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\publish\ChooChooApp.dll
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\publish\ChooChooApp.deps.json
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\publish\ChooChooApp.runtimeconfig.json
+C:\Users\Admin\Desktop\ChooChooApp\bin\Release\net6.0-windows\publish\ChooChooApp.pdb

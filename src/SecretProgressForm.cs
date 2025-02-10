@@ -4,9 +4,9 @@ using System.Windows.Forms;
 
 namespace ChooChooApp
 {
-    /// 
+    /// <summary>
     /// A simple modal progress popup that displays status messages while secret mode is processed.
-    /// 
+    /// </summary>
     public class SecretProgressForm : Form
     {
         private TextBox txtProgress;
