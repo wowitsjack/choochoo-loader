@@ -188,27 +188,37 @@ After this, **WeMod and other trainers** should now work correctly in **WINE/Pro
 
 ---
 
-🔥 New & Improved Features
-🚀 Fully Functional DLL Injection System
+🔥 New & Improved Features!
 
-Checks for 32-bit/64-bit compatibility before injection.
-Automatically logs and tracks injected DLLs.
-Prevents invalid injections and provides clear user feedback.
+🚀 DLL Injection Overhaul
 
-🕹️ XInput Handling Enhancements
+Checks 32-bit/64-bit compatibility before injecting.
+Refuses mismatched DLLs (skips injection, logs an error).
+Real-time UI updates: each validated DLL is marked and displayed.
+Only logs each injection attempt once, preventing spam in the status box.
 
-Scoped input capture to prevent interference with other UI elements.
-Fix for B button issues (no longer exits menus improperly).
+🕹️ Refined XInput Handling
+
+Scoped controller input: no more unintentional global actions when certain popups or combos are focused.
+Properly interprets dpad vs. thumbstick movements, ignoring slight joystick drifts.
+Enhanced button mappings for easy menu navigation (e.g., A = Enter, B = Cancel, etc.).
 
 📜 Command-Line Enhancements
 
-Ability to pass profiles via CLI.
--p "profile_name" to specify a game profile.
--autolaunch flag to automatically launch with preconfigured settings.
+-p "ProfileName": Loads a saved profile (paths, DLLs, etc.) on startup.
+-autolaunch: Starts the configured game automatically after a short delay.
+-dllinject [Dll1.dll] [Dll2.dll] ...: Injects specified DLLs (up to five), either absolute or relative paths.
+Logs a clear message if any specified DLL doesn't exist or if the limit of five is exceeded.
 
-🖥️ UI & Stability Fixes
+🖥️ UI & Stability Improvements
 
-Refactored DLL list UI, now fully scrollable without interference.
-Explicitly labels injected DLLs for better user awareness.
-Auto-refresh is now controlled to prevent UI flickering.
-More robust error handling to prevent crashes.
+Windows Forms interface: simpler, more intuitive, drastically easier to maintain.
+Controlled list refresh: the DLL list only updates on demand (or after an injection event), preserving scroll position and preventing flicker.
+Robust error handling: handles missing files, incorrect bitness, or invalid profiles gracefully.
+
+🛠️ Fixes & Optimizations
+
+Launch button overlapping is resolved.
+DLL validation logs appear only once (preventing log spam).
+Auto-launch system improved: can be toggled in settings or triggered from command line.
+Profiles are automatically saved to profiles\last.ini on each launch, so your last-used config is always restored.
