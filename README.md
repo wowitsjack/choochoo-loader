@@ -61,7 +61,7 @@ Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**,
 
 2. **Add ChooChoo to Steam**  
    - Open Steam on your Deck (in Desktop Mode).  
-   - Go to **Games** → **Add a Non-Steam Game to My Library** → Select `choochoo.exe`.
+   - Go to **Games** → **Add a Non-Steam Game to My Library** → Select `ChooChooApp.exe` or `ChooChooApp-DotNetBuiltIn.exe`.
 
 3. **Enable Proton**  
    - In your Steam Library, **right-click** on ChooChoo → **Properties** → **Compatibility**.  
@@ -133,7 +133,7 @@ Now trainers like **WeMod** should work properly on Steam Deck.
 
 2. **Create a Bottle & Add ChooChoo**  
    - In Whisky, create a new **bottle**.  
-   - Use **"Run Executable"** and pick `choochoo.exe` to place it in the bottle.
+   - Use **"Run Executable"** and pick `ChooChooApp.exe` or `ChooChooApp-DotNetBuiltIn.exe` to place it in the bottle.
 
 3. **Configure & Run**  
    - In the bottle’s settings, enable **DXVK** (and other needed compatibility tweaks).  
@@ -188,11 +188,27 @@ After this, **WeMod and other trainers** should now work correctly in **WINE/Pro
 
 ---
 
-## **Build & Compilation**
+🔥 New & Improved Features
+🚀 Fully Functional DLL Injection System
 
-ChooChoo is primarily built for Windows (or Wine/Proton).  
+Checks for 32-bit/64-bit compatibility before injection.
+Automatically logs and tracks injected DLLs.
+Prevents invalid injections and provides clear user feedback.
 
-**Dependencies**  
-- Windows API (e.g., `windows.h`)  
-- Common Controls (`comctl32.lib`)  
-- Shell API (`shlwapi.lib`)
+🕹️ XInput Handling Enhancements
+
+Scoped input capture to prevent interference with other UI elements.
+Fix for B button issues (no longer exits menus improperly).
+
+📜 Command-Line Enhancements
+
+Ability to pass profiles via CLI.
+-p "profile_name" to specify a game profile.
+-autolaunch flag to automatically launch with preconfigured settings.
+
+🖥️ UI & Stability Fixes
+
+Refactored DLL list UI, now fully scrollable without interference.
+Explicitly labels injected DLLs for better user awareness.
+Auto-refresh is now controlled to prevent UI flickering.
+More robust error handling to prevent crashes.
