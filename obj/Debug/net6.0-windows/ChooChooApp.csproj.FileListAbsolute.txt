@@ -1,0 +1,15 @@
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.csproj.AssemblyReference.cache
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.AssemblyInfoInputs.cache
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.AssemblyInfo.cs
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Desktop\ChooChooApp\bin\Debug\net6.0-windows\ChooChooApp.exe
+C:\Users\Admin\Desktop\ChooChooApp\bin\Debug\net6.0-windows\ChooChooApp.deps.json
+C:\Users\Admin\Desktop\ChooChooApp\bin\Debug\net6.0-windows\ChooChooApp.runtimeconfig.json
+C:\Users\Admin\Desktop\ChooChooApp\bin\Debug\net6.0-windows\ChooChooApp.dll
+C:\Users\Admin\Desktop\ChooChooApp\bin\Debug\net6.0-windows\ChooChooApp.pdb
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.dll
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\refint\ChooChooApp.dll
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.pdb
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ChooChooApp.genruntimeconfig.cache
+C:\Users\Admin\Desktop\ChooChooApp\obj\Debug\net6.0-windows\ref\ChooChooApp.dll
