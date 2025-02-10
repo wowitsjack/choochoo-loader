@@ -172,6 +172,9 @@ namespace ChooChooApp
         // Game process.
         private Process? gameProcess;
 
+        // Flag to prevent multiple launches.
+        private bool hasLaunched = false;
+
         public MainForm()
         {
             // Initialize arrays and collections.
@@ -717,6 +720,11 @@ namespace ChooChooApp
 
         private void BtnLaunch_Click(object? sender, EventArgs e)
         {
+            // Prevent multiple launches.
+            if (hasLaunched)
+                return;
+            hasLaunched = true;
+
             Directory.CreateDirectory(profilesDir);
             string lastFile = Path.Combine(profilesDir, "last.ini");
             SaveProfile(lastFile);
@@ -1371,7 +1379,6 @@ namespace ChooChooApp
                 Environment.Exit(1);
             }
         }
-
         // =========================
         // End of .NET 6+ check and installer methods.
         // =========================
