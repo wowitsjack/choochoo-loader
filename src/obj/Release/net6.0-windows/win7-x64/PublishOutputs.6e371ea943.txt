@@ -1,7 +1,0 @@
-C:\Users\Admin\Desktop\ChooChooApp\out\ChooChoo.pdb
-C:\Users\Admin\Desktop\ChooChooApp\out\D3DCompiler_47_cor3.dll
-C:\Users\Admin\Desktop\ChooChooApp\out\PenImc_cor3.dll
-C:\Users\Admin\Desktop\ChooChooApp\out\PresentationNative_cor3.dll
-C:\Users\Admin\Desktop\ChooChooApp\out\vcruntime140_cor3.dll
-C:\Users\Admin\Desktop\ChooChooApp\out\wpfgfx_cor3.dll
-C:\Users\Admin\Desktop\ChooChooApp\out\ChooChoo.exe

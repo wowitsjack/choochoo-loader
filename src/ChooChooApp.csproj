@@ -1,42 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
-    <!-- Use Windows Forms (or WPF if you switch the flag) -->
+    <!-- WinForms project targeting net48 for Wine Mono -->
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
-
-    <!-- Target .NET 6 for Windows 10 x64 -->
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-
-    <!-- Application name and icon -->
+    <TargetFramework>net48</TargetFramework>
     <AssemblyName>ChooChoo</AssemblyName>
     <ApplicationIcon>icon.ico</ApplicationIcon>
-
-    <!-- Single-file packaging without bundling the runtime -->
-    <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-
-    <!-- Include native libraries in the single file -->
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-
-    <!-- Enable compression to reduce file size -->
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-
-    <!-- Remove trimming properties (PublishTrimmed and TrimMode) because trimming is not supported on WPF/WinForms -->
-    <!-- <PublishTrimmed>true</PublishTrimmed> -->
-    <!-- <TrimMode>link</TrimMode> -->
-
-    <!-- PublishReadyToRun can remain if desired, but note it may add some size -->
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
-    <!-- Ensure the icon file is included -->
-    <None Include="icon.ico" CopyToOutputDirectory="Always" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Embed dotnet6.exe as a resource -->
-    <EmbeddedResource Include="dotnet6.exe" />
+    <None Include="Fonts\MotivaSans.ttf" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>
