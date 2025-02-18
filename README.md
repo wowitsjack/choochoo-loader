@@ -141,39 +141,42 @@ Now trainers like **WeMod** should work properly on Steam Deck.
    - Inside ChooChoo, set **Game Path**, **Trainer Path**, and extras.  
    - **Launch** to start your game + trainer simultaneously.
   
-If trainers like **WeMod** are not working properly in **CrossOver/Whisky**, removing **Wine-Mono** and installing the official **.NET Framework** can help.  
+<del>If trainers like <b>WeMod</b> are not working properly in <b>CrossOver/Whisky</b>, removing <b>Wine-Mono</b> and installing the official <b>.NET Framework</b> can help.</del>
 
-## WeMod/Trainer Not Launching (Fix) (macOS) 
+<del>## WeMod/Trainer Not Launching (Fix) (macOS)</del>
 
- **Open Whisky**   
-   - Launch **Whisky** on macOS.  
+<del>**Open Whisky**</del>  
+<del>- Launch **Whisky** on macOS.</del>
 
- **Go to Bottle Configuration**   
-   - Open your game/trainer's **bottle** in Whisky and hit Bottle Configuration.  
+<del>**Go to Bottle Configuration**</del>  
+<del>- Open your game/trainer's **bottle** in Whisky and hit Bottle Configuration.</del>
 
- **Open Control Panel**   
-   - Inside the bottle, open **Control Panel**.  
+<del>**Open Control Panel**</del>  
+<del>- Inside the bottle, open **Control Panel**.</del>
 
- **Uninstall Wine-Mono**  
-   - In **Control Panel**, go to **Applications** or **Add/Remove Programs**.
-   - Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.
-   - Find **Wine Mono Windows Support**.  
-   - Click **Uninstall** and follow the prompts.
+<del>**Uninstall Wine-Mono**</del>  
+<del>- In **Control Panel**, go to **Applications** or **Add/Remove Programs**.</del>  
+<del>- Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.</del>  
+<del>- Find **Wine Mono Windows Support**.</del>  
+<del>- Click **Uninstall** and follow the prompts.</del>  
 
-### **Install .NET Framework (Manually)**  
+<del>### **Install .NET Framework (Manually)**</del>  
 
-Since some trainers require .NET, download and install it manually:  
+<del>Since some trainers require .NET, download and install it manually:</del>  
 
-1. **Download the .NET Framework** from [Microsoft’s official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).
-2. Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel. 
-3. Inside Whisky, **run the .NET installer** inside the bottle.  
-4. Follow the installation steps as you would on Windows.
-5. Set your Bottle's Windows Version back to Windows 10 using the Wine Control Panel. 
+<del>1. **Download the .NET Framework** from [Microsoft’s official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).</del>  
+<del>2. Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.</del>  
+<del>3. Inside Whisky, **run the .NET installer** inside the bottle.</del>  
+<del>4. Follow the installation steps as you would on Windows.</del>  
+<del>5. Set your Bottle's Windows Version back to Windows 10 using the Wine Control Panel.</del>  
 
+<del>(WeMod will want .NET 4.7.1)</del>  
 
-(WeMod will want .NET 4.7.1)
+<del>After this, **WeMod and other trainers** should now work correctly in **WINE/Proton on macOS**</del>  
 
-After this, **WeMod and other trainers** should now work correctly in **WINE/Proton on macOS**  
+The developers of Whisky have stated they do not intend to upgrade Whisky to a functional version of WINE to allow modern Windows binaries. 
+The Whisky project is not suitable for use with ChooChoo and ChooChoo style video gaming.
+Unfortuntely there is nothing the end user can do about this.
 
 ---
 
