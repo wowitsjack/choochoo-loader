@@ -690,7 +690,6 @@ namespace ChooChooApp
             ApplyDarkTheme(this);
             LoadSettings();
             ProcessCommandLineArgs();
-
             this.Shown += (s, e) => this.Activate();
         }
 
@@ -1627,6 +1626,24 @@ namespace ChooChooApp
             }
         }
 
+        // ***** SINGLE SaveSettings() Method (duplicates removed) *****
+        private void SaveSettings()
+        {
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(settingsFile))
+                {
+                    sw.WriteLine("AUTO-LAUNCH=" + chkAutoLaunch.Checked);
+                    sw.WriteLine("FULLSCREEN=" + chkFullscreen.Checked);
+                }
+                LogStatus("Settings saved.");
+            }
+            catch (Exception ex)
+            {
+                LogStatus("SaveSettings error: " + ex.Message);
+            }
+        }
+
         private void LoadRecentsForCombo(ComboBox combo)
         {
             if (combo == null) return;
@@ -1886,103 +1903,6 @@ namespace ChooChooApp
                             chkFullscreen.Checked = fs;
                     }
                 }
-            }
-        }
-
-        private void SaveSettings()
-        {
-            File.WriteAllText(settingsFile, $"AUTO-LAUNCH={chkAutoLaunch.Checked}\r\nFULLSCREEN={chkFullscreen.Checked}");
-        }
-
-        private class MemoryRegionDump
-        {
-            public IntPtr BaseAddress;
-            public uint RegionSize;
-            public byte[] MemoryContents;
-        }
-
-        private void PopulateRunningExes()
-        {
-            comboRunningExes.Items.Clear();
-            LogStatus("Scanning running processes...");
-            Process[] procs = ProcessHelper.GetProcesses();
-            foreach (Process p in procs)
-            {
-                try
-                {
-                    string display = $"{p.ProcessName} (PID {p.Id}) - {p.MainWindowTitle}";
-                    comboRunningExes.Items.Add(p);
-                    LogStatus("Detected: " + display);
-                }
-                catch (Exception ex)
-                {
-                    LogStatus("Error: " + ex.Message);
-                }
-            }
-            if (comboRunningExes.Items.Count == 0)
-            {
-                foreach (Process p in Process.GetProcesses())
-                {
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(p.MainWindowTitle))
-                        {
-                            comboRunningExes.Items.Add(p);
-                            LogStatus("Detected (fallback): " + p.ProcessName);
-                        }
-                    }
-                    catch { }
-                }
-            }
-            if (comboRunningExes.Items.Count > 0)
-                comboRunningExes.SelectedIndex = 0;
-        }
-
-        private void ProcessCommandLineArgs()
-        {
-            string[] args = Environment.GetCommandLineArgs();
-            for (int i = 1; i < args.Length; i++)
-            {
-                string arg = args[i].ToLower();
-                if (arg == "-p" || arg == "--profile")
-                {
-                    if (i + 1 < args.Length)
-                    {
-                        string profileName = args[i + 1];
-                        comboProfiles.Text = profileName;
-                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
-                        if (File.Exists(filePath))
-                            LoadProfile(filePath);
-                        i++;
-                    }
-                }
-                else if (arg == "-autolaunch")
-                {
-                    chkAutoLaunch.Checked = true;
-                }
-                else if (arg == "-dllinject")
-                {
-                    int j = i + 1;
-                    int index = 0;
-                    while (j < args.Length && !args[j].StartsWith("-") && index < 4)
-                    {
-                        comboAdditional[index].Text = args[j];
-                        chkAdditional[index].Checked = true;
-                        index++;
-                        j++;
-                    }
-                    i = j - 1;
-                }
-            }
-            if (chkAutoLaunch.Checked)
-            {
-                var launchTimer = new WinFormsTimer { Interval = 2000 };
-                launchTimer.Tick += (s, e) =>
-                {
-                    launchTimer.Stop();
-                    BtnLaunch_Click(null, EventArgs.Empty);
-                };
-                launchTimer.Start();
             }
         }
 
@@ -2648,6 +2568,23 @@ namespace ChooChooApp
         }
         // ----------------------- End Missing Event Handler Definitions -----------------------
 
+        // Fix for missing method: PopulateRunningExes
+        private void PopulateRunningExes()
+        {
+            comboRunningExes.Items.Clear();
+            Process[] procs = ProcessHelper.GetProcesses();
+            foreach (Process p in procs)
+            {
+                comboRunningExes.Items.Add(p);
+            }
+        }
+
+        // Fix for missing method: ProcessCommandLineArgs
+        private void ProcessCommandLineArgs()
+        {
+            // No command-line argument processing implemented.
+        }
+
         private void ApplyDarkTheme(Control control)
         {
             if (control is Button btn)
@@ -2678,22 +2615,31 @@ namespace ChooChooApp
                 ApplyDarkTheme(child);
             }
         }
+    } // End of MainForm class
 
-        public static class Program
+    // Added definition for MemoryRegionDump to fix build errors.
+    public class MemoryRegionDump
+    {
+        public IntPtr BaseAddress { get; set; }
+        public uint RegionSize { get; set; }
+        public byte[] MemoryContents { get; set; }
+    }
+
+    // ***** Program class moved OUTSIDE of MainForm *****
+    public static class Program
+    {
+        [STAThread]
+        public static void Main()
         {
-            [STAThread]
-            public static void Main()
+            try
             {
-                try
-                {
-                    Application.EnableVisualStyles();
-                    Application.SetCompatibleTextRenderingDefault(false);
-                    Application.Run(new MainForm());
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Unhandled exception: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new MainForm());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unhandled exception: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

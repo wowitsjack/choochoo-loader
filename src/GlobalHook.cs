@@ -42,12 +42,13 @@ namespace ChooChooApp
         {
             if (nCode >= 0)
             {
-                int msg = wParam.ToInt32();
                 const int WM_KEYDOWN = 0x0100;
                 const int WM_SYSKEYDOWN = 0x0104;
+                int msg = wParam.ToInt32();
                 if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
                 {
-                    KBDLLHOOKSTRUCT hookStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+                    // Use non-generic Marshal.PtrToStructure overload
+                    KBDLLHOOKSTRUCT hookStruct = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
                     Keys key = (Keys)hookStruct.vkCode;
                     OnKeyPressed(new GlobalHookEventArgs(key));
                 }

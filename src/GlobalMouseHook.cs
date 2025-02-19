@@ -42,7 +42,8 @@ namespace ChooChooApp
         {
             if (nCode >= 0)
             {
-                MSLLHOOKSTRUCT hookStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+                // Use non-generic Marshal.PtrToStructure overload
+                MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
                 MouseMessages message = (MouseMessages)wParam.ToInt32();
                 OnMouseAction(new GlobalMouseHookEventArgs(message, new Point(hookStruct.pt.x, hookStruct.pt.y)));
             }
