@@ -6,10 +6,6 @@ using System.Drawing;
 
 namespace ChooChooApp
 {
-    /// <summary>
-    /// Installs a global low‐level mouse hook so that mouse events can be intercepted
-    /// even when an exclusive fullscreen game is active.
-    /// </summary>
     public class GlobalMouseHook : IDisposable
     {
         private const int WH_MOUSE_LL = 14;
@@ -27,12 +23,9 @@ namespace ChooChooApp
         private IntPtr SetHook(HookProc proc)
         {
             using (Process curProcess = Process.GetCurrentProcess())
+            using (ProcessModule curModule = curProcess.MainModule)
             {
-                ProcessModule curModule = null;
-                try { curModule = curProcess.MainModule; } catch { }
-                IntPtr hMod = (curModule != null && !string.IsNullOrEmpty(curModule.ModuleName))
-                              ? GetModuleHandle(curModule.ModuleName) : IntPtr.Zero;
-                return SetWindowsHookEx(WH_MOUSE_LL, proc, hMod, 0);
+                return SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
             }
         }
 
@@ -42,8 +35,7 @@ namespace ChooChooApp
         {
             if (nCode >= 0)
             {
-                // Use non-generic Marshal.PtrToStructure overload
-                MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+                MSLLHOOKSTRUCT hookStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
                 MouseMessages message = (MouseMessages)wParam.ToInt32();
                 OnMouseAction(new GlobalMouseHookEventArgs(message, new Point(hookStruct.pt.x, hookStruct.pt.y)));
             }
@@ -88,16 +80,13 @@ namespace ChooChooApp
         }
 
         [DllImport("user32.dll", CharSet=CharSet.Auto, SetLastError=true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook,
-            HookProc lpfn, IntPtr hMod, uint dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
 
         [DllImport("user32.dll", CharSet=CharSet.Auto, SetLastError=true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
         [DllImport("user32.dll", CharSet=CharSet.Auto, SetLastError=true)]
-        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode,
-            IntPtr wParam, IntPtr lParam);
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
         [DllImport("kernel32.dll", CharSet=CharSet.Auto, SetLastError=true)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);
