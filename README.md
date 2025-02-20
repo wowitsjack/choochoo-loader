@@ -13,7 +13,7 @@ A loader for SteamOS/Linux/macOS that handles launches of games with trainers/mo
 
 ## **Download & Links**
 
-[![Download ChooChoo](https://img.shields.io/badge/Download-ChooChoo-green?style=for-the-badge&logo=github)](https://github.com/wowitsjack/choochoo-loader/releases/download/3.0a/ChooChoo.exe)
+[![Download ChooChoo](https://img.shields.io/badge/Download-ChooChoo-green?style=for-the-badge&logo=github)](https://github.com/wowitsjack/choochoo-loader/releases/download/4.0a/ChooChoo.exe)
 
 [![GitHub Releases](https://img.shields.io/github/release/wowitsjack/choochoo-loader/all.svg?style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases)  
 [![Platforms: macOS | Linux | Steam Deck | Windows ](https://img.shields.io/badge/Platforms-Windows%20|%20macOS%20|%20Linux%20|%20Steam%20Deck-blue?style=for-the-badge&logo=steam)](https://github.com/wowitsjack/choochoo-loader)  
@@ -61,7 +61,7 @@ Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**,
 
 2. **Add ChooChoo to Steam**  
    - Open Steam on your Deck (in Desktop Mode).  
-   - Go to **Games** → **Add a Non-Steam Game to My Library** → Select `ChooChooApp.exe` or `ChooChooApp-DotNetBuiltIn.exe`.
+   - Go to **Games** → **Add a Non-Steam Game to My Library** → Select `choochoo.exe`.
 
 3. **Enable Proton**  
    - In your Steam Library, **right-click** on ChooChoo → **Properties** → **Compatibility**.  
@@ -133,7 +133,7 @@ Now trainers like **WeMod** should work properly on Steam Deck.
 
 2. **Create a Bottle & Add ChooChoo**  
    - In Whisky, create a new **bottle**.  
-   - Use **"Run Executable"** and pick `ChooChooApp.exe` or `ChooChooApp-DotNetBuiltIn.exe` to place it in the bottle.
+   - Use **"Run Executable"** and pick `ChooChoo.exe` to place it in the bottle.
 
 3. **Configure & Run**  
    - In the bottle’s settings, enable **DXVK** (and other needed compatibility tweaks).  
