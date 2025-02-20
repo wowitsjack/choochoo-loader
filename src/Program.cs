@@ -201,7 +201,9 @@ namespace ChooChooApp
         private Panel mainPanel;
         private TabControl tabControl;
         private TabPage tabPageMain, tabPageHelp, tabPageTools;
-        private CheckBox chkFullscreen, chkTVMode, chkAutoLaunch;
+        private CheckBox chkTVMode, chkAutoLaunch;
+        // Changed checkbox name: instead of "chkFullscreen", use "chkLoadTVOnLaunch"
+        private CheckBox chkLoadTVOnLaunch;
         private GroupBox groupPaths, groupProfiles;
         private Label labelRunningExes, labelGamePath, labelTrainerPath;
         private ComboBox comboRunningExes, comboGame, comboTrainer, comboProfiles;
@@ -256,6 +258,9 @@ namespace ChooChooApp
         // Custom cursor and active element indicator
         private Cursor myCursor;
         private Label arrowIndicator;
+        
+        // Field to store original bounds for TV mode restoration.
+        private Rectangle originalBounds = Rectangle.Empty;
 
         protected override CreateParams CreateParams
         {
@@ -275,6 +280,23 @@ namespace ChooChooApp
             {
                 HideOverlay();
                 e.Handled = true;
+            }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            // Reinitialize TV mode controls if TV mode is active after handle recreation
+            if (chkTVMode != null && chkTVMode.Checked && tvModePanel != null)
+            {
+                tvModePanel.Visible = true;
+                tvModePanel.BringToFront();
+                if (tvModeList != null && tvModeList.Items.Count > 0)
+                {
+                    tvModeList.SelectedIndices.Clear();
+                    tvModeList.SelectedIndices.Add(0);
+                    tvModeList.Focus();
+                }
             }
         }
 
@@ -307,7 +329,7 @@ namespace ChooChooApp
 
         public MainForm()
         {
-            this.Text = "ChooChoo Injection Engine - Standalone";
+            this.Text = "ChooChoo Injection Engine";
             this.ShowInTaskbar = true;
             this.Owner = null;
             this.Font = new Font("Tahoma", 9);
@@ -316,7 +338,9 @@ namespace ChooChooApp
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
+            originalBounds = this.Bounds;
 
+            // Remove custom font usage for TV mode by always using default fonts
             try { myCursor = new Cursor("cursor.cur"); } catch { myCursor = Cursors.Default; }
 
             Directory.CreateDirectory(profilesDir);
@@ -328,10 +352,10 @@ namespace ChooChooApp
             this.Controls.Add(overlayPanel);
             overlayPanel.BringToFront();
 
-            string startupPath = Application.StartupPath;
+            // Attempt to load custom font; if it fails, use default "Tahoma"
             try {
                 PrivateFontCollection pfc = new PrivateFontCollection();
-                string fontPath = Path.Combine(startupPath, "Fonts", "MotivaSans.ttf");
+                string fontPath = Path.Combine(Application.StartupPath, "Fonts", "MotivaSans.ttf");
                 pfc.AddFontFile(fontPath);
                 tvFont = new Font(pfc.Families[0], 24, FontStyle.Bold);
             } catch {
@@ -339,6 +363,7 @@ namespace ChooChooApp
             }
 
             SetupFileBrowserPanel();
+            // Initially create TV mode panel (it will be re-created each time TV mode is entered)
             SetupTVModePanel();
 
             mainPanel = new Panel() { Dock = DockStyle.Fill };
@@ -357,11 +382,17 @@ namespace ChooChooApp
             Panel mainTabPanel = new Panel() { Dock = DockStyle.Fill };
             tabPageMain.Controls.Add(mainTabPanel);
 
-            chkFullscreen = new CheckBox() { Text = "Fullscreen Mode", Location = new Point(10,10), AutoSize = true, ForeColor = Color.White };
-            mainTabPanel.Controls.Add(chkFullscreen);
+            // Replace "Fullscreen Mode" with "Load TV Mode on Launch"
+            chkLoadTVOnLaunch = new CheckBox() { Text = "Load TV Mode on Launch", Location = new Point(10,10), AutoSize = true, ForeColor = Color.White };
+            mainTabPanel.Controls.Add(chkLoadTVOnLaunch);
 
-            chkTVMode = new CheckBox() { Text = "TV Mode", Location = new Point(150,10), AutoSize = true, ForeColor = Color.White };
-            chkTVMode.CheckedChanged += (s,e) => ToggleTVMode();
+            chkTVMode = new CheckBox() { Text = "TV Mode", Location = new Point(200,10), AutoSize = true, ForeColor = Color.White };
+            chkTVMode.CheckedChanged += (s,e) => 
+            {
+                ToggleTVMode();
+                // In TV mode, ensure our window is topmost so that game behind does not receive inputs
+                this.TopMost = chkTVMode.Checked;
+            };
             mainTabPanel.Controls.Add(chkTVMode);
 
             groupPaths = new GroupBox() { Text = "Paths & Process Selection", Bounds = new Rectangle(10,40,850,320), ForeColor = Color.White, BackColor = Color.FromArgb(45,45,48) };
@@ -405,7 +436,9 @@ namespace ChooChooApp
             comboGame = new ComboBox() { Location = new Point(200,60), Size = new Size(430,25), DropDownStyle = ComboBoxStyle.DropDown, ForeColor = Color.White };
             groupPaths.Controls.Add(comboGame);
 
-            btnBrowseGame = new Button() { Text = "Browse...", Location = new Point(640,60), Size = new Size(100,25), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnBrowseGame = CreateFlatButton("Browse...");
+            btnBrowseGame.Location = new Point(640,60);
+            btnBrowseGame.Size = new Size(100,25);
             btnBrowseGame.Click += (s,e) => IntegratedBrowse(comboGame);
             groupPaths.Controls.Add(btnBrowseGame);
 
@@ -415,18 +448,22 @@ namespace ChooChooApp
             comboTrainer = new ComboBox() { Location = new Point(130,100), Size = new Size(500,25), DropDownStyle = ComboBoxStyle.DropDown, ForeColor = Color.White };
             groupPaths.Controls.Add(comboTrainer);
 
-            btnBrowseTrainer = new Button() { Text = "Browse...", Location = new Point(640,100), Size = new Size(100,25), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnBrowseTrainer = CreateFlatButton("Browse...");
+            btnBrowseTrainer.Location = new Point(640,100);
+            btnBrowseTrainer.Size = new Size(100,25);
             btnBrowseTrainer.Click += (s,e) => IntegratedBrowse(comboTrainer);
             groupPaths.Controls.Add(btnBrowseTrainer);
 
             for (int i = 0; i < 4; i++)
             {
                 int y = 145 + i * 35;
-                chkAdditional[i] = new CheckBox() { Text = "Launch/Inject (Optional)", Location = new Point(20,y), ForeColor = Color.White };
+                chkAdditional[i] = new CheckBox() { Text = "Launch/Inject (Optional)", Location = new Point(20,y), ForeColor = Color.White, TextAlign = ContentAlignment.MiddleLeft };
                 groupPaths.Controls.Add(chkAdditional[i]);
                 comboAdditional[i] = new ComboBox() { Location = new Point(130,y), Size = new Size(500,25), DropDownStyle = ComboBoxStyle.DropDown, ForeColor = Color.White };
                 groupPaths.Controls.Add(comboAdditional[i]);
-                btnBrowseAdditional[i] = new Button() { Text = "Browse...", Location = new Point(640,y), Size = new Size(100,25), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+                btnBrowseAdditional[i] = CreateFlatButton("Browse...");
+                btnBrowseAdditional[i].Location = new Point(640,y);
+                btnBrowseAdditional[i].Size = new Size(100,25);
                 int idxLocal = i;
                 btnBrowseAdditional[i].Click += (s,e) => IntegratedBrowse(comboAdditional[idxLocal]);
                 groupPaths.Controls.Add(btnBrowseAdditional[i]);
@@ -441,44 +478,55 @@ namespace ChooChooApp
             comboProfiles = new ComboBox() { Size = new Size(280,25), Location = new Point((groupProfiles.ClientSize.Width-280)/2,40), DropDownStyle = ComboBoxStyle.DropDown, ForeColor = Color.White };
             groupProfiles.Controls.Add(comboProfiles);
 
-            btnRefreshProfiles = new Button() { Size = new Size(80,30), Location = new Point(65,80), Text = "Refresh", ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnRefreshProfiles = CreateFlatButton("Refresh");
+            btnRefreshProfiles.Size = new Size(80,30);
+            btnRefreshProfiles.Location = new Point(65,80);
             btnRefreshProfiles.Click += BtnRefreshProfiles_Click;
             groupProfiles.Controls.Add(btnRefreshProfiles);
 
-            btnLoadProfile = new Button() { Size = new Size(80,30), Location = new Point(65+80+10,80), Text = "Load", ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnLoadProfile = CreateFlatButton("Load");
+            btnLoadProfile.Size = new Size(80,30);
+            btnLoadProfile.Location = new Point(65+80+10,80);
             btnLoadProfile.Click += BtnLoadProfile_Click;
             groupProfiles.Controls.Add(btnLoadProfile);
 
-            btnSaveProfile = new Button() { Size = new Size(170,30), Location = new Point((groupProfiles.ClientSize.Width-170)/2,120), Text = "Save", ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnSaveProfile = CreateFlatButton("Save");
+            btnSaveProfile.Size = new Size(170,30);
+            btnSaveProfile.Location = new Point((groupProfiles.ClientSize.Width-170)/2,120);
             btnSaveProfile.Click += BtnSaveProfile_Click;
             groupProfiles.Controls.Add(btnSaveProfile);
 
-            btnDeleteProfile = new Button() { Size = new Size(170,30), Location = new Point((groupProfiles.ClientSize.Width-170)/2,160), Text = "Delete", ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnDeleteProfile = CreateFlatButton("Delete");
+            btnDeleteProfile.Size = new Size(170,30);
+            btnDeleteProfile.Location = new Point((groupProfiles.ClientSize.Width-170)/2,160);
             btnDeleteProfile.Click += BtnDeleteProfile_Click;
             groupProfiles.Controls.Add(btnDeleteProfile);
 
-            txtStatusLog = new TextBox() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Bounds = new Rectangle(10, chkAutoLaunch.Bottom+10, 850,150), ForeColor = Color.White, BackColor = Color.FromArgb(30,30,30) };
+            txtStatusLog = new TextBox() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Bounds = new Rectangle(10, chkAutoLaunch.Bottom+10, 850,150), BackColor = Color.FromArgb(30,30,30), ForeColor = Color.White };
             mainTabPanel.Controls.Add(txtStatusLog);
 
-            listBoxDlls = new ListBox() { Location = new Point(txtStatusLog.Right+10, txtStatusLog.Top), Size = new Size(300,txtStatusLog.Height), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Tahoma",10), ForeColor = Color.White, BackColor = Color.FromArgb(45,45,48) };
+            listBoxDlls = new ListBox() { Location = new Point(txtStatusLog.Right+10, txtStatusLog.Top), Size = new Size(300,txtStatusLog.Height), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Tahoma",10), BackColor = Color.FromArgb(45,45,48), ForeColor = Color.White };
             mainTabPanel.Controls.Add(listBoxDlls);
 
             Panel panelLaunch = new Panel() { Location = new Point(10, txtStatusLog.Bottom+40), Size = new Size(1170,50) };
             mainTabPanel.Controls.Add(panelLaunch);
 
-            btnLaunch = new Button() { Text = "Launch", Size = new Size(panelLaunch.Width, panelLaunch.Height), Location = new Point(0,0), Font = new Font("Tahoma",14,FontStyle.Bold), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            btnLaunch = CreateFlatButton("Launch");
+            btnLaunch.Size = new Size(panelLaunch.Width, panelLaunch.Height);
+            btnLaunch.Location = new Point(0,0);
+            btnLaunch.Font = new Font("Tahoma",14,FontStyle.Bold);
             btnLaunch.Click += BtnLaunch_Click;
             panelLaunch.Controls.Add(btnLaunch);
 
-            // Trainer launch methods: use a GroupBox with a FlowLayoutPanel for six methods
-            groupTrainerMethods = new GroupBox() { Text = "Trainer Launch Methods (Optional)", Bounds = new Rectangle(10, panelLaunch.Bottom+10, 1170, 60), ForeColor = Color.White, BackColor = Color.FromArgb(45,45,48) };
+            // Trainer launch methods
+            groupTrainerMethods = new GroupBox() { Text = "Trainer Launch Methods (Optional)", Bounds = new Rectangle(10, panelLaunch.Bottom+10, 1170, 60), BackColor = Color.FromArgb(45,45,48), ForeColor = Color.White };
             mainTabPanel.Controls.Add(groupTrainerMethods);
             flpTrainerMethods = new FlowLayoutPanel() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
             groupTrainerMethods.Controls.Add(flpTrainerMethods);
             string[] methodNames = { "P/Invoke CreateProcess", "CMD Start", "CreateThread Injection", "Remote Thread Injection", "Shell Execute", "Raw Process.Start" };
             for (int i = 0; i < 6; i++)
             {
-                radioTrainerMethods[i] = new RadioButton() { Text = methodNames[i], AutoSize = true, ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70), Margin = new Padding(5) };
+                radioTrainerMethods[i] = new RadioButton() { Text = methodNames[i], AutoSize = true, BackColor = Color.FromArgb(30,30,30), ForeColor = Color.White, Margin = new Padding(5) };
                 flpTrainerMethods.Controls.Add(radioTrainerMethods[i]);
             }
             radioTrainerMethods[0].Checked = true;
@@ -489,47 +537,67 @@ namespace ChooChooApp
 
             // Tools tab buttons
             int tbtnWidth = 130, tbtnHeight = 30, tpadding = 10;
-            Button btnFreezeProcess = new Button() { Text = "Freeze Proc", Location = new Point(tpadding, tpadding), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnFreezeProcess = CreateFlatButton("Freeze Proc");
+            btnFreezeProcess.Location = new Point(tpadding, tpadding);
+            btnFreezeProcess.Size = new Size(tbtnWidth, tbtnHeight);
             btnFreezeProcess.Click += BtnFreezeProcess_Click;
             tabPageTools.Controls.Add(btnFreezeProcess);
 
-            Button btnUnfreezeProcess = new Button() { Text = "Unfreeze Proc", Location = new Point(tpadding*2+tbtnWidth, tpadding), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnUnfreezeProcess = CreateFlatButton("Unfreeze Proc");
+            btnUnfreezeProcess.Location = new Point(tpadding*2+tbtnWidth, tpadding);
+            btnUnfreezeProcess.Size = new Size(tbtnWidth, tbtnHeight);
             btnUnfreezeProcess.Click += BtnUnfreezeProcess_Click;
             tabPageTools.Controls.Add(btnUnfreezeProcess);
 
-            Button btnKillProcess = new Button() { Text = "Kill Proc", Location = new Point(tpadding*3+tbtnWidth*2, tpadding), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnKillProcess = CreateFlatButton("Kill Proc");
+            btnKillProcess.Location = new Point(tpadding*3+tbtnWidth*2, tpadding);
+            btnKillProcess.Size = new Size(tbtnWidth, tbtnHeight);
             btnKillProcess.Click += BtnKillProcess_Click;
             tabPageTools.Controls.Add(btnKillProcess);
 
-            Button btnDumpProcess = new Button() { Text = "Dump Proc", Location = new Point(tpadding*4+tbtnWidth*3, tpadding), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnDumpProcess = CreateFlatButton("Dump Proc");
+            btnDumpProcess.Location = new Point(tpadding*4+tbtnWidth*3, tpadding);
+            btnDumpProcess.Size = new Size(tbtnWidth, tbtnHeight);
             btnDumpProcess.Click += BtnDumpProcess_Click;
             tabPageTools.Controls.Add(btnDumpProcess);
 
-            Button btnListImports = new Button() { Text = "List Imports", Location = new Point(tpadding*5+tbtnWidth*4, tpadding), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnListImports = CreateFlatButton("List Imports");
+            btnListImports.Location = new Point(tpadding*5+tbtnWidth*4, tpadding);
+            btnListImports.Size = new Size(tbtnWidth, tbtnHeight);
             btnListImports.Click += BtnListImports_Click;
             tabPageTools.Controls.Add(btnListImports);
 
-            Button btnListRuntimes = new Button() { Text = "List Runtimes", Location = new Point(tpadding, tpadding*2+tbtnHeight), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnListRuntimes = CreateFlatButton("List Runtimes");
+            btnListRuntimes.Location = new Point(tpadding, tpadding*2+tbtnHeight);
+            btnListRuntimes.Size = new Size(tbtnWidth, tbtnHeight);
             btnListRuntimes.Click += BtnListRuntimes_Click;
             tabPageTools.Controls.Add(btnListRuntimes);
 
-            Button btnSaveState = new Button() { Text = "Save State", Location = new Point(tpadding*2+tbtnWidth, tpadding*2+tbtnHeight), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnSaveState = CreateFlatButton("Save State");
+            btnSaveState.Location = new Point(tpadding*2+tbtnWidth, tpadding*2+tbtnHeight);
+            btnSaveState.Size = new Size(tbtnWidth, tbtnHeight);
             btnSaveState.Click += BtnSaveState_Click;
             tabPageTools.Controls.Add(btnSaveState);
 
-            Button btnLoadState = new Button() { Text = "Load State", Location = new Point(tpadding*3+tbtnWidth*2, tpadding*2+tbtnHeight), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnLoadState = CreateFlatButton("Load State");
+            btnLoadState.Location = new Point(tpadding*3+tbtnWidth*2, tpadding*2+tbtnHeight);
+            btnLoadState.Size = new Size(tbtnWidth, tbtnHeight);
             btnLoadState.Click += BtnLoadState_Click;
             tabPageTools.Controls.Add(btnLoadState);
 
-            Button btnListModules = new Button() { Text = "List Modules", Location = new Point(tpadding*4+tbtnWidth*3, tpadding*2+tbtnHeight), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnListModules = CreateFlatButton("List Modules");
+            btnListModules.Location = new Point(tpadding*4+tbtnWidth*3, tpadding*2+tbtnHeight);
+            btnListModules.Size = new Size(tbtnWidth, tbtnHeight);
             btnListModules.Click += BtnListModules_Click;
             tabPageTools.Controls.Add(btnListModules);
 
-            Button btnListThreads = new Button() { Text = "List Threads", Location = new Point(tpadding*5+tbtnWidth*4, tpadding*2+tbtnHeight), Size = new Size(tbtnWidth, tbtnHeight), ForeColor = Color.White, BackColor = Color.FromArgb(70,70,70) };
+            Button btnListThreads = CreateFlatButton("List Threads");
+            btnListThreads.Location = new Point(tpadding*5+tbtnWidth*4, tpadding*2+tbtnHeight);
+            btnListThreads.Size = new Size(tbtnWidth, tbtnHeight);
             btnListThreads.Click += BtnListThreads_Click;
             tabPageTools.Controls.Add(btnListThreads);
 
-            txtToolOutput = new TextBox() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Location = new Point(tpadding, tpadding*3+tbtnHeight*2), Size = new Size(1150,500), ForeColor = Color.White, BackColor = Color.FromArgb(30,30,30) };
+            txtToolOutput = new TextBox() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Location = new Point(tpadding, tpadding*3+tbtnHeight*2), Size = new Size(1150,500), BackColor = Color.FromArgb(30,30,30), ForeColor = Color.White };
             tabPageTools.Controls.Add(txtToolOutput);
 
             WinFormsTimer xinputTimer = new WinFormsTimer() { Interval = 16 };
@@ -548,7 +616,7 @@ namespace ChooChooApp
             arrowIndicator.Text = "◆";
             arrowIndicator.Font = new Font("Tahoma",12,FontStyle.Bold);
             arrowIndicator.AutoSize = true;
-            arrowIndicator.ForeColor = Color.White;
+            arrowIndicator.ForeColor = Color.LightGray;
             this.Controls.Add(arrowIndicator);
             arrowIndicator.BringToFront();
 
@@ -606,6 +674,9 @@ namespace ChooChooApp
             };
             ApplyDarkTheme(this);
             LoadSettings();
+            // If "Load TV Mode on Launch" is checked, automatically enable TV mode
+            if (chkLoadTVOnLaunch.Checked)
+                chkTVMode.Checked = true;
             ProcessCommandLineArgs();
 
             this.Shown += (s,e) =>
@@ -618,6 +689,19 @@ namespace ChooChooApp
                     tvModeList.Focus();
                 }
             };
+        }
+
+        // Utility method to create a flat-styled button with consistent colors.
+        private Button CreateFlatButton(string text)
+        {
+            Button btn = new Button();
+            btn.Text = text;
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.Black;
+            btn.BackColor = Color.FromArgb(30,30,30);
+            btn.ForeColor = Color.White;
+            return btn;
         }
 
         private void BtnRefreshProfiles_Click(object sender, EventArgs e)
@@ -1191,13 +1275,10 @@ namespace ChooChooApp
             fileBrowserButtonPanel.FlowDirection = FlowDirection.LeftToRight;
             fileBrowserButtonPanel.Padding = new Padding(10);
             fileBrowserButtonPanel.BackColor = Color.FromArgb(45,45,48);
-            btnUp = new Button();
-            btnUp.Text = "Up";
+            btnUp = CreateFlatButton("Up");
             btnUp.Width = 100;
             btnUp.Height = 40;
             btnUp.Font = new Font("Tahoma",12,FontStyle.Bold);
-            btnUp.BackColor = Color.FromArgb(70,70,70);
-            btnUp.ForeColor = Color.White;
             btnUp.Click += (s,e) =>
             {
                 var parentDir = Directory.GetParent(currentDirectory);
@@ -1208,16 +1289,16 @@ namespace ChooChooApp
                 }
             };
             fileBrowserButtonPanel.Controls.Add(btnUp);
-            btnRefresh = new Button();
-            btnRefresh.Text = "Refresh";
+            btnRefresh = CreateFlatButton("Refresh");
             btnRefresh.Width = 150;
             btnRefresh.Height = 50;
             btnRefresh.Font = new Font("Tahoma",12,FontStyle.Bold);
-            btnRefresh.BackColor = Color.FromArgb(70,70,70);
-            btnRefresh.ForeColor = Color.White;
             btnRefresh.Click += (s,e) => RefreshFileBrowserList();
             fileBrowserButtonPanel.Controls.Add(btnRefresh);
-            btnSelect = new Button() { Text = "Select", Width = 100, Height = 40, Font = new Font("Tahoma",12,FontStyle.Bold), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+            btnSelect = CreateFlatButton("Select");
+            btnSelect.Width = 100;
+            btnSelect.Height = 40;
+            btnSelect.Font = new Font("Tahoma",12,FontStyle.Bold);
             btnSelect.Click += (s,e) =>
             {
                 if (fileBrowserList.SelectedItems.Count > 0)
@@ -1229,7 +1310,10 @@ namespace ChooChooApp
                 }
             };
             fileBrowserButtonPanel.Controls.Add(btnSelect);
-            btnCancel = new Button() { Text = "Cancel", Width = 100, Height = 40, Font = new Font("Tahoma",12,FontStyle.Bold), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+            btnCancel = CreateFlatButton("Cancel");
+            btnCancel.Width = 100;
+            btnCancel.Height = 40;
+            btnCancel.Font = new Font("Tahoma",12,FontStyle.Bold);
             btnCancel.Click += (s,e) => { fileBrowserPanel.Visible = false; };
             fileBrowserButtonPanel.Controls.Add(btnCancel);
             fileBrowserLayout.Controls.Add(fileBrowserButtonPanel,0,2);
@@ -1270,8 +1354,11 @@ namespace ChooChooApp
                     item.SubItems.Add(fileType);
                     fileBrowserList.Items.Add(item);
                 }
-                if (fileBrowserList.Items.Count > 0 && fileBrowserList.SelectedItems.Count == 0)
+                if (fileBrowserList.Items.Count > 0)
+                {
+                    fileBrowserList.SelectedIndices.Clear();
                     fileBrowserList.Items[0].Selected = true;
+                }
             }
             catch (Exception ex)
             {
@@ -1373,6 +1460,7 @@ namespace ChooChooApp
                 }
                 if (e.KeyCode == Keys.B)
                 {
+                    // If in a process-selection overlay, pressing B should close the overlay
                     if (overlayPanel != null && overlayPanel.Visible)
                     {
                         HideOverlay();
@@ -1694,7 +1782,7 @@ namespace ChooChooApp
                 sw.WriteLine(comboTrainer.Text);
                 for (int i = 0; i < 4; i++)
                     sw.WriteLine((chkAdditional[i].Checked ? "1" : "0") + "," + comboAdditional[i].Text);
-                sw.WriteLine("FULLSCREEN=" + chkFullscreen.Checked);
+                sw.WriteLine("FULLSCREEN=" + chkLoadTVOnLaunch.Checked);
             }
         }
 
@@ -1723,7 +1811,7 @@ namespace ChooChooApp
                     string val = settingsLine.Substring("FULLSCREEN=".Length).Trim();
                     bool fs;
                     if (bool.TryParse(val, out fs))
-                        chkFullscreen.Checked = fs;
+                        chkLoadTVOnLaunch.Checked = fs;
                 }
             }
         }
@@ -1820,7 +1908,8 @@ namespace ChooChooApp
             XINPUT_STATE state;
             uint result = XInput.XInputGetState(0, out state);
             const short thumbDeadzone = 20000;
-            if (tvModePanel.Visible)
+            // Add a null-check for tvModePanel
+            if (tvModePanel != null && tvModePanel.Visible)
             {
                 if (state.Gamepad.sThumbLY < -thumbDeadzone)
                 {
@@ -1843,7 +1932,7 @@ namespace ChooChooApp
                 bool aButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) != 0;
                 if (aButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) == 0)
                 {
-                    if (tvModeList.SelectedItems.Count > 0)
+                    if (tvModeList != null && tvModeList.SelectedItems.Count > 0)
                     {
                         string action = tvModeList.SelectedItems[0].Text;
                         HandleTVModeAction(action);
@@ -1894,7 +1983,7 @@ namespace ChooChooApp
             {
                 if (fileBrowserPanel.Visible)
                     RefreshFileBrowserList();
-                else if (tvModePanel.Visible)
+                else if (tvModePanel != null && tvModePanel.Visible)
                     RefreshTVInfo();
             }
             bool bButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_B) != 0;
@@ -1971,37 +2060,50 @@ namespace ChooChooApp
                 LogStatus("tvInfoText is null in RefreshTVInfo");
         }
 
+        // Revised ToggleTVMode: when entering TV mode, dispose any existing tvModePanel and re-create it.
         private void ToggleTVMode()
         {
             if (chkTVMode.Checked)
             {
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.WindowState = FormWindowState.Maximized;
-                if(mainPanel != null)
-                    mainPanel.Visible = false;
-                if(tvModePanel != null)
+                if (tvModePanel != null)
                 {
-                    tvModePanel.Visible = true;
-                    tvModePanel.BringToFront();
-                    if (tvModeList != null && tvModeList.Items.Count > 0)
-                    {
-                        tvModeList.SelectedIndices.Clear();
-                        tvModeList.SelectedIndices.Add(0);
-                        tvModeList.Focus();
-                    }
+                    this.Controls.Remove(tvModePanel);
+                    tvModePanel.Dispose();
+                    tvModePanel = null;
+                }
+                SetupTVModePanel();
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.Bounds = Screen.PrimaryScreen.Bounds;
+                this.TopMost = true;
+                if (mainPanel != null)
+                    mainPanel.Visible = false;
+                tvModePanel.Visible = true;
+                tvModePanel.BringToFront();
+                if (tvModeList != null && tvModeList.Items.Count > 0)
+                {
+                    tvModeList.SelectedIndices.Clear();
+                    tvModeList.SelectedIndices.Add(0);
+                    tvModeList.Focus();
                 }
             }
             else
             {
-                HideOverlay();
-                if(tvModePanel != null)
+                if (tvModePanel != null)
+                {
                     tvModePanel.Visible = false;
-                if(mainPanel != null)
+                    this.Controls.Remove(tvModePanel);
+                    tvModePanel.Dispose();
+                    tvModePanel = null;
+                }
+                if (mainPanel != null)
                 {
                     mainPanel.Visible = true;
                     mainPanel.BringToFront();
                 }
+                this.TopMost = false;
                 this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                if (originalBounds != Rectangle.Empty)
+                    this.Bounds = originalBounds;
                 this.WindowState = FormWindowState.Normal;
                 this.ClientSize = new Size(1200,750);
             }
@@ -2067,8 +2169,8 @@ namespace ChooChooApp
                 processList.FullRowSelect = true;
                 processList.GridLines = true;
                 processList.HeaderStyle = ColumnHeaderStyle.None;
-                processList.Font = new Font(tvFont.FontFamily,18,FontStyle.Bold);
-                processList.ForeColor = Color.White;
+                processList.Font = new Font("Tahoma",18,FontStyle.Bold);
+                processList.ForeColor = Color.LightGray;
                 processList.BackColor = Color.FromArgb(30,30,30);
                 processList.Margin = new Padding(10);
                 processList.Columns.Add("Process",-2,HorizontalAlignment.Center);
@@ -2090,7 +2192,10 @@ namespace ChooChooApp
                     catch { }
                 }
                 if (processList.Items.Count > 0)
+                {
+                    processList.SelectedIndices.Clear();
                     processList.SelectedIndices.Add(0);
+                }
                 processList.KeyDown += (s,e) =>
                 {
                     try 
@@ -2152,11 +2257,11 @@ namespace ChooChooApp
                 for (int i = 0; i < 4; i++)
                 {
                     Label lbl = new Label() { Text = "Additional Injection " + (i+1) + " (Optional)", Dock = DockStyle.Fill, ForeColor = Color.White, Padding = new Padding(5) };
-                    TextBox tb = new TextBox() { Text = comboAdditional[i].Text, Dock = DockStyle.Fill, Font = new Font(tvFont.FontFamily,16,FontStyle.Bold), Margin = new Padding(5) };
-                    CheckBox chk = new CheckBox() { Checked = chkAdditional[i].Checked, Dock = DockStyle.Fill, Font = new Font(tvFont.FontFamily,16,FontStyle.Bold), ForeColor = Color.White, Margin = new Padding(5) };
+                    TextBox tb = new TextBox() { Text = comboAdditional[i].Text, Dock = DockStyle.Fill, Font = new Font("Tahoma",16,FontStyle.Bold), Margin = new Padding(5) };
+                    CheckBox chk = new CheckBox() { Checked = chkAdditional[i].Checked, Dock = DockStyle.Fill, Font = new Font("Tahoma",16,FontStyle.Bold), ForeColor = Color.White, Margin = new Padding(5), TextAlign = ContentAlignment.MiddleLeft };
                     int index = i;
                     chk.CheckedChanged += (s,e) => { chkAdditional[index].Checked = chk.Checked; };
-                    Button btnBrowse = new Button() { Text = "Browse", Dock = DockStyle.Fill, Font = tvFont, Margin = new Padding(5), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+                    Button btnBrowse = CreateFlatButton("Browse");
                     btnBrowse.Click += (s,e) => { TVFileBrowserForTextBox(tb); };
                     tbl.Controls.Add(lbl, 0, i);
                     tbl.Controls.Add(tb, 1, i);
@@ -2167,7 +2272,9 @@ namespace ChooChooApp
                     tbl.Controls.Add(pnl, 2, i);
                     tb.TextChanged += (s,e) => { comboAdditional[index].Text = tb.Text; };
                 }
-                Button btnOk = new Button() { Text = "OK", Dock = DockStyle.Bottom, Height = 50, Font = tvFont, Margin = new Padding(5), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+                Button btnOk = CreateFlatButton("OK");
+                btnOk.Dock = DockStyle.Bottom;
+                btnOk.Height = 50;
                 btnOk.Click += (s,e) => { HideOverlay(); };
                 panel.Controls.Add(tbl);
                 panel.Controls.Add(btnOk);
@@ -2199,7 +2306,7 @@ namespace ChooChooApp
                 lb.FullRowSelect = true;
                 lb.GridLines = true;
                 lb.HeaderStyle = ColumnHeaderStyle.None;
-                lb.Font = new Font(tvFont.FontFamily,18,FontStyle.Bold);
+                lb.Font = new Font("Tahoma",18,FontStyle.Bold);
                 lb.ForeColor = Color.White;
                 lb.BackColor = Color.FromArgb(30,30,30);
                 lb.Margin = new Padding(10);
@@ -2215,13 +2322,18 @@ namespace ChooChooApp
                     }
                 }
                 if (lb.Items.Count > 0)
+                {
+                    lb.SelectedIndices.Clear();
                     lb.SelectedIndices.Add(0);
+                }
                 tbl.Controls.Add(lb, 0, 0);
 
                 FlowLayoutPanel panelButtons = new FlowLayoutPanel();
                 panelButtons.Dock = DockStyle.Fill;
                 panelButtons.Padding = new Padding(10);
-                Button btnLoad = new Button() { Text = "Load", Width = 150, Height = 50, Font = tvFont, Margin = new Padding(5), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+                Button btnLoad = CreateFlatButton("Load");
+                btnLoad.Width = 150;
+                btnLoad.Height = 50;
                 btnLoad.Click += (s,e) =>
                 {
                     if (lb.SelectedItems.Count > 0)
@@ -2235,7 +2347,9 @@ namespace ChooChooApp
                         }
                     }
                 };
-                Button btnSave = new Button() { Text = "Save", Width = 150, Height = 50, Font = tvFont, Margin = new Padding(5), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+                Button btnSave = CreateFlatButton("Save");
+                btnSave.Width = 150;
+                btnSave.Height = 50;
                 btnSave.Click += (s,e) =>
                 {
                     string profileName = comboProfiles.Text.Trim();
@@ -2257,7 +2371,9 @@ namespace ChooChooApp
                         }
                     }
                 };
-                Button btnDelete = new Button() { Text = "Delete", Width = 150, Height = 50, Font = tvFont, Margin = new Padding(5), BackColor = Color.FromArgb(70,70,70), ForeColor = Color.White };
+                Button btnDelete = CreateFlatButton("Delete");
+                btnDelete.Width = 150;
+                btnDelete.Height = 50;
                 btnDelete.Click += (s,e) =>
                 {
                     if (lb.SelectedItems.Count > 0)
@@ -2297,7 +2413,7 @@ namespace ChooChooApp
                 tb.ReadOnly = true;
                 tb.ScrollBars = ScrollBars.Vertical;
                 tb.Dock = DockStyle.Fill;
-                tb.Font = tvFont;
+                tb.Font = new Font("Tahoma", 22, FontStyle.Bold);
                 tb.BackColor = Color.FromArgb(30,30,30);
                 tb.ForeColor = Color.White;
                 tb.Margin = new Padding(10);
@@ -2311,6 +2427,7 @@ namespace ChooChooApp
             }
         }
 
+        // SetupTVModePanel uses default fonts (Tahoma) for TV mode controls.
         private void SetupTVModePanel()
         {
             tvModePanel = new Panel();
@@ -2331,18 +2448,16 @@ namespace ChooChooApp
             Panel tvHeaderPanel = new Panel();
             tvHeaderPanel.Dock = DockStyle.Fill;
             tvHeaderPanel.BackColor = Color.FromArgb(45,45,48);
-            Button btnTVLaunch = new Button();
-            btnTVLaunch.Text = "Launch";
-            btnTVLaunch.Font = tvFont;
+            Button btnTVLaunch = CreateFlatButton("Launch");
+            // Use default Tahoma font here
+            btnTVLaunch.Font = new Font("Tahoma", 24, FontStyle.Bold);
             btnTVLaunch.Dock = DockStyle.Left;
             btnTVLaunch.Width = 150;
-            btnTVLaunch.BackColor = Color.FromArgb(70,70,70);
-            btnTVLaunch.ForeColor = Color.White;
             btnTVLaunch.Click += (s,e) => BtnLaunch_Click(null, EventArgs.Empty);
             Label lblTVHeader = new Label();
-            lblTVHeader.Text = "CHOOCHOO LOADER - TV MODE";
-            lblTVHeader.Font = tvFont;
-            lblTVHeader.ForeColor = Color.White;
+            lblTVHeader.Text = "CHOOCHOO LOADER (Steam Deck Mode)";
+            lblTVHeader.Font = new Font("Tahoma", 24, FontStyle.Bold);
+            lblTVHeader.ForeColor = Color.LightGray;
             lblTVHeader.Dock = DockStyle.Fill;
             lblTVHeader.TextAlign = ContentAlignment.MiddleCenter;
             tvHeaderPanel.Controls.Add(btnTVLaunch);
@@ -2355,8 +2470,9 @@ namespace ChooChooApp
             tvModeList = new ListView();
             tvModeList.Dock = DockStyle.Fill;
             tvModeList.View = View.List;
-            tvModeList.Font = new Font(tvFont.FontFamily, 22, FontStyle.Bold);
-            tvModeList.ForeColor = Color.White;
+            // Use default Tahoma font here as well
+            tvModeList.Font = new Font("Tahoma", 22, FontStyle.Bold);
+            tvModeList.ForeColor = Color.LightGray;
             tvModeList.BackColor = Color.FromArgb(30,30,30);
             string[] menuItems = new string[]
             {
@@ -2376,8 +2492,11 @@ namespace ChooChooApp
             tvModeList.Items.Clear();
             foreach (string item in menuItems)
                 tvModeList.Items.Add(new ListViewItem(item));
-            if (tvModeList.Items.Count > 0 && tvModeList.SelectedIndices.Count == 0)
+            if (tvModeList.Items.Count > 0)
+            {
+                tvModeList.SelectedIndices.Clear();
                 tvModeList.SelectedIndices.Add(0);
+            }
             tvModeList.KeyDown += (s,e) =>
             {
                 try 
@@ -2412,9 +2531,9 @@ namespace ChooChooApp
             tvInfoText.Dock = DockStyle.Fill;
             tvInfoText.Multiline = true;
             tvInfoText.ReadOnly = true;
-            tvInfoText.Font = tvFont;
+            tvInfoText.Font = new Font("Tahoma", 24, FontStyle.Bold);
             tvInfoText.BackColor = Color.FromArgb(30,30,30);
-            tvInfoText.ForeColor = Color.White;
+            tvInfoText.ForeColor = Color.LightGray;
             tvFooterPanel.Controls.Add(tvInfoText);
             tvLayout.Controls.Add(tvFooterPanel, 0, 2);
         }
@@ -2424,7 +2543,7 @@ namespace ChooChooApp
             try {
                 using (StreamWriter sw = new StreamWriter(settingsFile))
                 {
-                    sw.WriteLine(chkFullscreen.Checked);
+                    sw.WriteLine(chkLoadTVOnLaunch.Checked);
                     sw.WriteLine(chkTVMode.Checked);
                     sw.WriteLine(chkAutoLaunch.Checked);
                 }
@@ -2442,9 +2561,9 @@ namespace ChooChooApp
                 {
                     using (StreamReader sr = new StreamReader(settingsFile))
                     {
-                        bool fs, tv, auto;
-                        if (bool.TryParse(sr.ReadLine(), out fs))
-                            chkFullscreen.Checked = fs;
+                        bool loadTV, tv, auto;
+                        if (bool.TryParse(sr.ReadLine(), out loadTV))
+                            chkLoadTVOnLaunch.Checked = loadTV;
                         if (bool.TryParse(sr.ReadLine(), out tv))
                             chkTVMode.Checked = tv;
                         if (bool.TryParse(sr.ReadLine(), out auto))
@@ -2536,7 +2655,9 @@ namespace ChooChooApp
                 }
             }
             if (comboRunningExes.Items.Count > 0)
+            {
                 comboRunningExes.SelectedIndex = 0;
+            }
         }
 
         private void ProcessCommandLineArgs()
