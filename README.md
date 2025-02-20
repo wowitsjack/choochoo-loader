@@ -174,8 +174,8 @@ Now trainers like **WeMod** should work properly on Steam Deck.
 
 <del>After this, **WeMod and other trainers** should now work correctly in **WINE/Proton on macOS**</del>  
 
-The developers of Whisky have stated they do not intend to upgrade Whisky to a functional version of WINE to allow modern Windows binaries. 
-The Whisky project is not suitable for use with ChooChoo and ChooChoo style video gaming.
+The developers of Whisky have stated they do not intend to upgrade Whisky to a newer version of WINE to allow more modern Windows binaries. 
+The Whisky project is not suitable for use with ChooChoo and ChooChoo style video gaming with binaries requiring complex memory manipulations.
 Unfortuntely there is nothing the end user can do about this.
 
 ---
