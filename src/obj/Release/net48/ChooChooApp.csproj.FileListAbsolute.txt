@@ -8,4 +8,3 @@ C:\Users\Admin\Desktop\ChooNew\bin\Release\net48\ChooChoo.exe
 C:\Users\Admin\Desktop\ChooNew\bin\Release\net48\ChooChoo.pdb
 C:\Users\Admin\Desktop\ChooNew\obj\Release\net48\ChooChoo.exe
 C:\Users\Admin\Desktop\ChooNew\obj\Release\net48\ChooChoo.pdb
-C:\Users\Admin\Desktop\ChooNew\bin\Release\net48\Fonts\MotivaSans.ttf

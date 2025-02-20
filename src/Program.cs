@@ -258,9 +258,27 @@ namespace ChooChooApp
         // Custom cursor and active element indicator
         private Cursor myCursor;
         private Label arrowIndicator;
-        
         // Field to store original bounds for TV mode restoration.
         private Rectangle originalBounds = Rectangle.Empty;
+        // New field for freeze toggle button (make it a class-level field so we can update its text)
+        private Button btnFreezeOther;
+        // New fields for freeze toggle state
+        private bool areOtherWindowsFrozen = false;
+        private Dictionary<int, List<uint>> frozenThreadIds = new Dictionary<int, List<uint>>();
+
+        // Additional Win32 API for window rectangle and focus
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        private struct RECT {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
 
         protected override CreateParams CreateParams
         {
@@ -352,15 +370,8 @@ namespace ChooChooApp
             this.Controls.Add(overlayPanel);
             overlayPanel.BringToFront();
 
-            // Attempt to load custom font; if it fails, use default "Tahoma"
-            try {
-                PrivateFontCollection pfc = new PrivateFontCollection();
-                string fontPath = Path.Combine(Application.StartupPath, "Fonts", "MotivaSans.ttf");
-                pfc.AddFontFile(fontPath);
-                tvFont = new Font(pfc.Families[0], 24, FontStyle.Bold);
-            } catch {
-                tvFont = new Font("Tahoma", 24, FontStyle.Bold);
-            }
+            // Force load "Tahoma" font (bypassing custom font loading)
+            tvFont = new Font("Tahoma", 24, FontStyle.Bold);
 
             SetupFileBrowserPanel();
             // Initially create TV mode panel (it will be re-created each time TV mode is entered)
@@ -394,6 +405,16 @@ namespace ChooChooApp
                 this.TopMost = chkTVMode.Checked;
             };
             mainTabPanel.Controls.Add(chkTVMode);
+
+            // New "Freeze Other Windows" button next to TV Mode.
+            // Moved further to the right (using chkTVMode.Right + 20) and resized so its text is not cropped.
+            btnFreezeOther = CreateFlatButton("Freeze Other Windows");
+            btnFreezeOther.Location = new Point(chkTVMode.Right + 20, chkTVMode.Top);
+            btnFreezeOther.Size = new Size(220, chkTVMode.Height + 10);
+            btnFreezeOther.Click += (s, e) => ToggleFreezeOtherWindows();
+            mainTabPanel.Controls.Add(btnFreezeOther);
+            // Initialize the button text based on the current state.
+            btnFreezeOther.Text = areOtherWindowsFrozen ? "Unfreeze Other Windows" : "Freeze Other Windows";
 
             groupPaths = new GroupBox() { Text = "Paths & Process Selection", Bounds = new Rectangle(10,40,850,320), ForeColor = Color.White, BackColor = Color.FromArgb(45,45,48) };
             mainTabPanel.Controls.Add(groupPaths);
@@ -2140,6 +2161,14 @@ namespace ChooChooApp
                 case "Manage Profiles":
                     TVManageProfiles();
                     break;
+                case "Freeze Other Windows":
+                    if (!areOtherWindowsFrozen)
+                        ToggleFreezeOtherWindows();
+                    break;
+                case "Unfreeze Other Windows":
+                    if (areOtherWindowsFrozen)
+                        ToggleFreezeOtherWindows();
+                    break;
                 case "Launch Application":
                     BtnLaunch_Click(null, EventArgs.Empty);
                     break;
@@ -2155,6 +2184,7 @@ namespace ChooChooApp
             RefreshTVInfo();
         }
 
+        // Updated TVSelectRunningProcess: now handles ESC and B keys, and accepts A (or Enter) to select a process.
         private void TVSelectRunningProcess()
         {
             try
@@ -2200,7 +2230,13 @@ namespace ChooChooApp
                 {
                     try 
                     {
-                        if (e.KeyCode == Keys.Enter && processList.SelectedItems.Count > 0)
+                        if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B)
+                        {
+                            HideOverlay();
+                            e.Handled = true;
+                            return;
+                        }
+                        if ((e.KeyCode == Keys.Enter || e.KeyCode == Keys.A) && processList.SelectedItems.Count > 0)
                         {
                             string sel = processList.SelectedItems[0].SubItems[0].Text;
                             foreach (Process p in procs)
@@ -2474,6 +2510,7 @@ namespace ChooChooApp
             tvModeList.Font = new Font("Tahoma", 22, FontStyle.Bold);
             tvModeList.ForeColor = Color.LightGray;
             tvModeList.BackColor = Color.FromArgb(30,30,30);
+            // New TV mode options include Freeze/Unfreeze
             string[] menuItems = new string[]
             {
                 "Select Running Process",
@@ -2485,6 +2522,8 @@ namespace ChooChooApp
                 "Set Additional Injection 4",
                 "Configure DLL Injections",
                 "Manage Profiles",
+                "Freeze Other Windows",
+                "Unfreeze Other Windows",
                 "Launch Application",
                 "View Console Output",
                 "Exit TV Mode"
@@ -2609,6 +2648,81 @@ namespace ChooChooApp
             else if (mainPanel != null)
             {
                 mainPanel.Focus();
+            }
+        }
+
+        // ToggleFreezeOtherWindows: if not frozen, it finds other fullscreen (or borderless fullscreen) apps,
+        // suspends their threads and stores their thread IDs; if already frozen, it resumes those threads.
+        private void ToggleFreezeOtherWindows()
+        {
+            Process current = Process.GetCurrentProcess();
+            Rectangle screenBounds = Screen.PrimaryScreen.Bounds;
+            if (!areOtherWindowsFrozen)
+            {
+                frozenThreadIds.Clear();
+                foreach (Process p in Process.GetProcesses())
+                {
+                    try {
+                        if (p.Id == current.Id) continue;
+                        if (p.MainWindowHandle == IntPtr.Zero) continue;
+                        RECT rect;
+                        if (!GetWindowRect(p.MainWindowHandle, out rect))
+                            continue;
+                        Rectangle winRect = new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                        int margin = 10;
+                        if (Math.Abs(winRect.Left - screenBounds.Left) <= margin &&
+                            Math.Abs(winRect.Top - screenBounds.Top) <= margin &&
+                            Math.Abs(winRect.Right - screenBounds.Right) <= margin &&
+                            Math.Abs(winRect.Bottom - screenBounds.Bottom) <= margin)
+                        {
+                            foreach (ProcessThread t in p.Threads)
+                            {
+                                IntPtr hThread = NativeMethods.OpenThread(NativeMethods.THREAD_SUSPEND_RESUME, false, (uint)t.Id);
+                                if (hThread != IntPtr.Zero)
+                                {
+                                    NativeMethods.SuspendThread(hThread);
+                                    NativeMethods.CloseHandle(hThread);
+                                    if (!frozenThreadIds.ContainsKey(p.Id))
+                                        frozenThreadIds[p.Id] = new List<uint>();
+                                    frozenThreadIds[p.Id].Add((uint)t.Id);
+                                }
+                            }
+                            LogStatus($"Process frozen: {p.ProcessName} (PID {p.Id})");
+                        }
+                    } catch { }
+                }
+                this.TopMost = true;
+                SetForegroundWindow(this.Handle);
+                this.Activate();
+                areOtherWindowsFrozen = true;
+                btnFreezeOther.Text = "Unfreeze Other Windows";
+                LogStatus("Other fullscreen windows frozen, ChooChoo is now in focus.");
+            }
+            else
+            {
+                foreach (var kvp in frozenThreadIds)
+                {
+                    int processId = kvp.Key;
+                    List<uint> threadIds = kvp.Value;
+                    foreach (uint threadId in threadIds)
+                    {
+                        try {
+                            IntPtr hThread = NativeMethods.OpenThread(NativeMethods.THREAD_SUSPEND_RESUME, false, threadId);
+                            if (hThread != IntPtr.Zero)
+                            {
+                                while (NativeMethods.ResumeThread(hThread) > 0) { }
+                                NativeMethods.CloseHandle(hThread);
+                            }
+                        } catch { }
+                    }
+                    LogStatus($"Process unfrozen (PID {processId}).");
+                }
+                frozenThreadIds.Clear();
+                areOtherWindowsFrozen = false;
+                // Stop forcing focus and allow other windows to be positioned freely.
+                this.TopMost = false;
+                btnFreezeOther.Text = "Freeze Other Windows";
+                LogStatus("Other fullscreen windows unfrozen.");
             }
         }
 
