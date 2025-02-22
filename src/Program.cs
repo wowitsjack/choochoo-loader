@@ -197,12 +197,14 @@ namespace ChooChooApp
     {
         // Field declarations
         private Panel overlayPanel;
+        private Panel defocusOverlay; // Used only in desktop mode
+        private bool isPaused = false; // True when input is paused in desktop mode
+        private bool isModeSwitching = false; // Flag to avoid defocus overlay during mode switching
         private Font tvFont;
         private Panel mainPanel;
         private TabControl tabControl;
         private TabPage tabPageMain, tabPageHelp, tabPageTools;
         private CheckBox chkTVMode, chkAutoLaunch;
-        // Changed checkbox name: instead of "chkFullscreen", use "chkLoadTVOnLaunch"
         private CheckBox chkLoadTVOnLaunch;
         private GroupBox groupPaths, groupProfiles;
         private Label labelRunningExes, labelGamePath, labelTrainerPath;
@@ -215,15 +217,12 @@ namespace ChooChooApp
         private TextBox txtStatusLog, txtToolOutput;
         private ListBox listBoxDlls;
         private Button btnLaunch;
-        // New group for trainer launch methods
         private GroupBox groupTrainerMethods;
         private FlowLayoutPanel flpTrainerMethods;
         private RadioButton[] radioTrainerMethods = new RadioButton[6];
-        // TV Mode controls
         private Panel tvModePanel;
         private ListView tvModeList;
-        private TextBox tvInfoText;
-        // File Browser controls
+        private TextBox tvInfoText; // Multiline TextBox per old logic
         private Panel fileBrowserPanel;
         private TableLayoutPanel fileBrowserLayout;
         private TextBox fileBrowserPathEntry;
@@ -232,53 +231,27 @@ namespace ChooChooApp
         private Button btnUp, btnRefresh, btnSelect, btnCancel;
         private Control currentTargetControl;
         private string currentDirectory;
-        // Other fields
         private string recentFile = "recent.ini";
         private string profilesDir = "profiles";
         private string settingsFile = "settings.ini";
         private Process gameProcess;
-        // XInput tracking
         private XINPUT_STATE prevXInputState;
         private byte prevLeftTrigger, prevRightTrigger;
-        // Arrow animation
         private double arrowAnimationTime;
         private int arrowAnimationOffset;
         private int arrowAnimationAmplitude = 3;
         private double arrowAnimationPeriod = 3.0;
-        // Declare arrowAnimationTimer as a field
         private WinFormsTimer arrowAnimationTimer;
-        // DLL injection validation
         private string[] additionalInjectedFile = new string[4];
         private Dictionary<string, bool> validatedDlls = new Dictionary<string, bool>();
-        // Analog sent flags
         private bool analogDownSent, analogUpSent, analogLeftSent, analogRightSent;
-        // Global hooks
         private GlobalHook globalHook;
         private GlobalMouseHook globalMouseHook;
-        // Custom cursor and active element indicator
         private Cursor myCursor;
         private Label arrowIndicator;
-        // Field to store original bounds for TV mode restoration.
         private Rectangle originalBounds = Rectangle.Empty;
-        // New field for freeze toggle button (make it a class-level field so we can update its text)
-        private Button btnFreezeOther;
-        // New fields for freeze toggle state
-        private bool areOtherWindowsFrozen = false;
-        private Dictionary<int, List<uint>> frozenThreadIds = new Dictionary<int, List<uint>>();
-
-        // Additional Win32 API for window rectangle and focus
-        [DllImport("user32.dll")]
-        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        private struct RECT {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
+        // Freeze game state
+        private bool gameFrozen = false;
 
         protected override CreateParams CreateParams
         {
@@ -301,26 +274,18 @@ namespace ChooChooApp
             }
         }
 
-        protected override void OnHandleCreated(EventArgs e)
+        // In both desktop and TV modes, when focus is lost, show the defocus overlay.
+        protected override void OnDeactivate(EventArgs e)
         {
-            base.OnHandleCreated(e);
-            // Reinitialize TV mode controls if TV mode is active after handle recreation
-            if (chkTVMode != null && chkTVMode.Checked && tvModePanel != null)
-            {
-                tvModePanel.Visible = true;
-                tvModePanel.BringToFront();
-                if (tvModeList != null && tvModeList.Items.Count > 0)
-                {
-                    tvModeList.SelectedIndices.Clear();
-                    tvModeList.SelectedIndices.Add(0);
-                    tvModeList.Focus();
-                }
-            }
+            base.OnDeactivate(e);
+            if (!isModeSwitching)
+                PauseInput();
         }
 
         protected override void OnActivated(EventArgs e)
         {
             base.OnActivated(e);
+            ResumeInput();
             ReleaseCapture();
             Cursor.Clip = Rectangle.Empty;
             Cursor.Current = myCursor;
@@ -345,6 +310,53 @@ namespace ChooChooApp
             base.WndProc(ref m);
         }
 
+        // Show defocus overlay in desktop mode (and in TV mode if defocused).
+        private void PauseInput()
+        {
+            if (!isPaused)
+            {
+                isPaused = true;
+                if (defocusOverlay == null)
+                    InitializeDefocusOverlay();
+                defocusOverlay.Visible = true;
+                defocusOverlay.BringToFront();
+                if (globalHook != null) { globalHook.Dispose(); globalHook = null; }
+                if (globalMouseHook != null) { globalMouseHook.Dispose(); globalMouseHook = null; }
+            }
+        }
+
+        private void ResumeInput()
+        {
+            if (isPaused)
+            {
+                isPaused = false;
+                defocusOverlay.Visible = false;
+                globalHook = new GlobalHook();
+                globalHook.KeyPressed += (s, e) => { /* global keyboard hook logic */ };
+                globalMouseHook = new GlobalMouseHook();
+                globalMouseHook.MouseAction += (s, e) => { /* global mouse hook logic */ };
+            }
+        }
+
+        private void InitializeDefocusOverlay()
+        {
+            defocusOverlay = new Panel();
+            defocusOverlay.Dock = DockStyle.Fill;
+            defocusOverlay.BackColor = Color.Gray;
+            Label resumeLabel = new Label();
+            resumeLabel.Text = "CLICK TO RESUME";
+            resumeLabel.Font = new Font("Tahoma", 36, FontStyle.Bold);
+            resumeLabel.ForeColor = Color.White;
+            resumeLabel.Dock = DockStyle.Fill;
+            resumeLabel.TextAlign = ContentAlignment.MiddleCenter;
+            defocusOverlay.Controls.Add(resumeLabel);
+            defocusOverlay.Visible = false;
+            resumeLabel.Click += (s, e) => { ResumeInput(); };
+            // Removed the defocusOverlay.Click handler to prevent accidental toggling on any click.
+            this.Controls.Add(defocusOverlay);
+            defocusOverlay.BringToFront();
+        }
+
         public MainForm()
         {
             this.Text = "ChooChoo Injection Engine";
@@ -358,7 +370,6 @@ namespace ChooChooApp
             this.StartPosition = FormStartPosition.CenterScreen;
             originalBounds = this.Bounds;
 
-            // Remove custom font usage for TV mode by always using default fonts
             try { myCursor = new Cursor("cursor.cur"); } catch { myCursor = Cursors.Default; }
 
             Directory.CreateDirectory(profilesDir);
@@ -370,11 +381,16 @@ namespace ChooChooApp
             this.Controls.Add(overlayPanel);
             overlayPanel.BringToFront();
 
-            // Force load "Tahoma" font (bypassing custom font loading)
-            tvFont = new Font("Tahoma", 24, FontStyle.Bold);
+            try {
+                PrivateFontCollection pfc = new PrivateFontCollection();
+                string fontPath = Path.Combine(Application.StartupPath, "Fonts", "MotivaSans.ttf");
+                pfc.AddFontFile(fontPath);
+                tvFont = new Font(pfc.Families[0], 24, FontStyle.Bold);
+            } catch {
+                tvFont = new Font("Tahoma", 24, FontStyle.Bold);
+            }
 
             SetupFileBrowserPanel();
-            // Initially create TV mode panel (it will be re-created each time TV mode is entered)
             SetupTVModePanel();
 
             mainPanel = new Panel() { Dock = DockStyle.Fill };
@@ -393,28 +409,16 @@ namespace ChooChooApp
             Panel mainTabPanel = new Panel() { Dock = DockStyle.Fill };
             tabPageMain.Controls.Add(mainTabPanel);
 
-            // Replace "Fullscreen Mode" with "Load TV Mode on Launch"
             chkLoadTVOnLaunch = new CheckBox() { Text = "Load TV Mode on Launch", Location = new Point(10,10), AutoSize = true, ForeColor = Color.White };
             mainTabPanel.Controls.Add(chkLoadTVOnLaunch);
 
             chkTVMode = new CheckBox() { Text = "TV Mode", Location = new Point(200,10), AutoSize = true, ForeColor = Color.White };
-            chkTVMode.CheckedChanged += (s,e) => 
+            chkTVMode.CheckedChanged += (s,e) =>
             {
-                ToggleTVMode();
-                // In TV mode, ensure our window is topmost so that game behind does not receive inputs
+                this.ToggleTVMode();
                 this.TopMost = chkTVMode.Checked;
             };
             mainTabPanel.Controls.Add(chkTVMode);
-
-            // New "Freeze Other Windows" button next to TV Mode.
-            // Moved further to the right (using chkTVMode.Right + 20) and resized so its text is not cropped.
-            btnFreezeOther = CreateFlatButton("Freeze Other Windows");
-            btnFreezeOther.Location = new Point(chkTVMode.Right + 20, chkTVMode.Top);
-            btnFreezeOther.Size = new Size(220, chkTVMode.Height + 10);
-            btnFreezeOther.Click += (s, e) => ToggleFreezeOtherWindows();
-            mainTabPanel.Controls.Add(btnFreezeOther);
-            // Initialize the button text based on the current state.
-            btnFreezeOther.Text = areOtherWindowsFrozen ? "Unfreeze Other Windows" : "Freeze Other Windows";
 
             groupPaths = new GroupBox() { Text = "Paths & Process Selection", Bounds = new Rectangle(10,40,850,320), ForeColor = Color.White, BackColor = Color.FromArgb(45,45,48) };
             mainTabPanel.Controls.Add(groupPaths);
@@ -423,14 +427,17 @@ namespace ChooChooApp
             groupPaths.Controls.Add(labelRunningExes);
 
             comboRunningExes = new ComboBox() { Location = new Point(200,20), Size = new Size(500,25), DropDownStyle = ComboBoxStyle.DropDownList, ForeColor = Color.White };
+            // The "NONE" item is added only to the process list.
+            comboRunningExes.Items.Clear();
+            comboRunningExes.Items.Add("NONE");
             comboRunningExes.DrawMode = DrawMode.OwnerDrawFixed;
             comboRunningExes.DrawItem += (s, e) =>
             {
                 e.DrawBackground();
                 if (e.Index >= 0)
                 {
-                    Process proc = comboRunningExes.Items[e.Index] as Process;
-                    string text = proc != null ? $"{proc.ProcessName} (PID {proc.Id})" : "";
+                    object item = comboRunningExes.Items[e.Index];
+                    string text = item is Process proc ? $"{proc.ProcessName} (PID {proc.Id})" : item.ToString();
                     SizeF textSize = e.Graphics.MeasureString(text, comboRunningExes.Font);
                     float x = e.Bounds.Left + (e.Bounds.Width - textSize.Width) / 2;
                     float y = e.Bounds.Top + (e.Bounds.Height - textSize.Height) / 2;
@@ -448,6 +455,10 @@ namespace ChooChooApp
                 {
                     gameProcess = proc;
                     LogStatus("Process selected: " + proc.ProcessName + " (PID " + proc.Id + ")");
+                }
+                else
+                {
+                    gameProcess = null;
                 }
             };
 
@@ -539,7 +550,6 @@ namespace ChooChooApp
             btnLaunch.Click += BtnLaunch_Click;
             panelLaunch.Controls.Add(btnLaunch);
 
-            // Trainer launch methods
             groupTrainerMethods = new GroupBox() { Text = "Trainer Launch Methods (Optional)", Bounds = new Rectangle(10, panelLaunch.Bottom+10, 1170, 60), BackColor = Color.FromArgb(45,45,48), ForeColor = Color.White };
             mainTabPanel.Controls.Add(groupTrainerMethods);
             flpTrainerMethods = new FlowLayoutPanel() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
@@ -552,11 +562,11 @@ namespace ChooChooApp
             }
             radioTrainerMethods[0].Checked = true;
 
-            // Help tab
+            // Help tab.
             HelpTab helpControl = new HelpTab() { Dock = DockStyle.Fill };
             tabPageHelp.Controls.Add(helpControl);
 
-            // Tools tab buttons
+            // Tools tab.
             int tbtnWidth = 130, tbtnHeight = 30, tpadding = 10;
             Button btnFreezeProcess = CreateFlatButton("Freeze Proc");
             btnFreezeProcess.Location = new Point(tpadding, tpadding);
@@ -583,7 +593,7 @@ namespace ChooChooApp
             tabPageTools.Controls.Add(btnDumpProcess);
 
             Button btnListImports = CreateFlatButton("List Imports");
-            btnListImports.Location = new Point(tpadding*5+tbtnWidth*4, tpadding);
+            btnListImports.Location = new Point(tpadding*5+tbtnWidth*4, tbtnHeight/2);
             btnListImports.Size = new Size(tbtnWidth, tbtnHeight);
             btnListImports.Click += BtnListImports_Click;
             tabPageTools.Controls.Add(btnListImports);
@@ -690,12 +700,11 @@ namespace ChooChooApp
             this.FormClosing += (s,e) =>
             {
                 SaveSettings();
-                globalHook.Dispose();
-                globalMouseHook.Dispose();
+                if (globalHook != null) globalHook.Dispose();
+                if (globalMouseHook != null) globalMouseHook.Dispose();
             };
             ApplyDarkTheme(this);
             LoadSettings();
-            // If "Load TV Mode on Launch" is checked, automatically enable TV mode
             if (chkLoadTVOnLaunch.Checked)
                 chkTVMode.Checked = true;
             ProcessCommandLineArgs();
@@ -712,7 +721,912 @@ namespace ChooChooApp
             };
         }
 
-        // Utility method to create a flat-styled button with consistent colors.
+        private void XinputTimer_Tick(object sender, EventArgs e)
+        {
+            // If defocus overlay is active, block all input processing.
+            if (defocusOverlay != null && defocusOverlay.Visible)
+                return;
+
+            XINPUT_STATE state;
+            uint result = XInput.XInputGetState(0, out state);
+            const short thumbDeadzone = 20000;
+            if (tvModePanel != null && tvModePanel.Visible)
+            {
+                if (state.Gamepad.sThumbLY < -thumbDeadzone)
+                {
+                    if (!analogDownSent)
+                    {
+                        SendKeys.Send("{DOWN}");
+                        analogDownSent = true;
+                    }
+                }
+                else analogDownSent = false;
+                if (state.Gamepad.sThumbLY > thumbDeadzone)
+                {
+                    if (!analogUpSent)
+                    {
+                        SendKeys.Send("{UP}");
+                        analogUpSent = true;
+                    }
+                }
+                else analogUpSent = false;
+                bool aButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) != 0;
+                if (aButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) == 0)
+                {
+                    if (tvModeList != null && tvModeList.SelectedItems.Count > 0)
+                    {
+                        string action = tvModeList.SelectedItems[0].Text;
+                        HandleTVModeAction(action);
+                    }
+                }
+                if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) != 0 &&
+                    (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) == 0)
+                    BtnLaunch_Click(null, EventArgs.Empty);
+                prevLeftTrigger = state.Gamepad.bLeftTrigger;
+                prevRightTrigger = state.Gamepad.bRightTrigger;
+                prevXInputState = state;
+                this.Invalidate();
+                return;
+            }
+            if (this.ActiveControl is ComboBox activeCbDropdown && activeCbDropdown.DroppedDown)
+            {
+                bool dpadDown = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_DOWN) != 0;
+                bool dpadUp = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_UP) != 0;
+                int currentIndex = activeCbDropdown.SelectedIndex;
+                if (dpadDown && currentIndex < activeCbDropdown.Items.Count - 1)
+                    activeCbDropdown.SelectedIndex = currentIndex + 1;
+                if (dpadUp && currentIndex > 0)
+                    activeCbDropdown.SelectedIndex = currentIndex - 1;
+                if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_LEFT) != 0 &&
+                    (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_LEFT) == 0)
+                    SendKeys.Send("{LEFT}");
+                if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_RIGHT) != 0 &&
+                    (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_RIGHT) == 0)
+                    SendKeys.Send("{RIGHT}");
+                bool aButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) != 0;
+                if (aButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) == 0)
+                {
+                    if (this.ActiveControl is ComboBox activeCb)
+                        activeCb.DroppedDown = true;
+                    else if (this.ActiveControl is Button btn)
+                        btn.PerformClick();
+                    else if (this.ActiveControl is CheckBox chk)
+                        chk.Checked = !chk.Checked;
+                    else
+                        SendKeys.Send("{ENTER}");
+                }
+            }
+            bool xButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_X) != 0;
+            if (xButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_X) == 0)
+                SendKeys.Send("{UP}");
+            bool yButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_Y) != 0;
+            if (yButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_Y) == 0)
+            {
+                if (fileBrowserPanel.Visible)
+                    RefreshFileBrowserList();
+                else if (tvModePanel != null && tvModePanel.Visible)
+                    RefreshTVInfo();
+            }
+            bool bButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_B) != 0;
+            if (bButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_B) == 0)
+            {
+                if (overlayPanel != null && overlayPanel.Visible)
+                    HideOverlay();
+                else if (fileBrowserPanel != null && fileBrowserPanel.Visible)
+                    fileBrowserPanel.Visible = false;
+                else if (chkTVMode.Checked)
+                    chkTVMode.Checked = false;
+            }
+            if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) != 0 &&
+                (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) == 0)
+                BtnLaunch_Click(null, EventArgs.Empty);
+            if (state.Gamepad.bLeftTrigger > 30 && prevLeftTrigger <= 30)
+                tabControl.SelectedIndex = (tabControl.SelectedIndex - 1 + tabControl.TabCount) % tabControl.TabCount;
+            if (state.Gamepad.bRightTrigger > 30 && prevRightTrigger <= 30)
+                tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
+            if (state.Gamepad.sThumbLY < -thumbDeadzone)
+            {
+                if (!analogDownSent)
+                {
+                    SendKeys.Send("{DOWN}");
+                    analogDownSent = true;
+                }
+            }
+            else analogDownSent = false;
+            if (state.Gamepad.sThumbLY > thumbDeadzone)
+            {
+                if (!analogUpSent)
+                {
+                    SendKeys.Send("{UP}");
+                    analogUpSent = true;
+                }
+            }
+            else analogUpSent = false;
+            if (state.Gamepad.sThumbLX < -thumbDeadzone)
+            {
+                if (!analogLeftSent)
+                {
+                    SendKeys.Send("{LEFT}");
+                    analogLeftSent = true;
+                }
+            }
+            else analogLeftSent = false;
+            if (state.Gamepad.sThumbLX > thumbDeadzone)
+            {
+                if (!analogRightSent)
+                {
+                    SendKeys.Send("{RIGHT}");
+                    analogRightSent = true;
+                }
+            }
+            else analogRightSent = false;
+            prevLeftTrigger = state.Gamepad.bLeftTrigger;
+            prevRightTrigger = state.Gamepad.bRightTrigger;
+            prevXInputState = state;
+            this.Invalidate();
+        }
+
+        public void RefreshTVInfo()
+        {
+            string configInfo = "Game Path (Optional): " + comboGame.Text + Environment.NewLine +
+                                "Trainer Path: " + comboTrainer.Text + Environment.NewLine;
+            for (int i = 0; i < 4; i++)
+            {
+                configInfo += $"Additional {i+1} (Optional): {(string.IsNullOrEmpty(comboAdditional[i].Text) ? "[Not Set]" : comboAdditional[i].Text)} - {(chkAdditional[i].Checked ? "Inject" : "Launch/Inject (Optional)")}" + Environment.NewLine;
+            }
+            configInfo += Environment.NewLine + "Recent Log:" + Environment.NewLine + txtStatusLog.Text;
+            if(tvInfoText != null)
+                tvInfoText.Text = configInfo;
+            else
+                LogStatus("tvInfoText is null in RefreshTVInfo");
+        }
+
+        // ToggleTVMode switches between TV and desktop modes.
+        private void ToggleTVMode()
+        {
+            isModeSwitching = true;
+            if (chkTVMode.Checked)
+            {
+                if (tvModePanel != null)
+                {
+                    this.Controls.Remove(tvModePanel);
+                    tvModePanel.Dispose();
+                    tvModePanel = null;
+                }
+                SetupTVModePanel();
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.Bounds = Screen.PrimaryScreen.Bounds;
+                this.TopMost = true;
+                if (mainPanel != null)
+                    mainPanel.Visible = false;
+                tvModePanel.Visible = true;
+                tvModePanel.BringToFront();
+                if (defocusOverlay != null)
+                    defocusOverlay.BringToFront();
+                if (tvModeList != null && tvModeList.Items.Count > 0)
+                {
+                    tvModeList.SelectedIndices.Clear();
+                    tvModeList.SelectedIndices.Add(0);
+                    tvModeList.Focus();
+                }
+            }
+            else
+            {
+                if (tvModePanel != null)
+                {
+                    tvModePanel.Visible = false;
+                    this.Controls.Remove(tvModePanel);
+                    tvModePanel.Dispose();
+                    tvModePanel = null;
+                }
+                if (mainPanel != null)
+                {
+                    mainPanel.Visible = true;
+                    mainPanel.BringToFront();
+                }
+                this.TopMost = false;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                if (originalBounds != Rectangle.Empty)
+                    this.Bounds = originalBounds;
+                this.WindowState = FormWindowState.Normal;
+                this.ClientSize = new Size(1200,750);
+            }
+            isModeSwitching = false;
+        }
+
+        private void HandleTVModeAction(string action)
+        {
+            switch (action)
+            {
+                case "Select Running Process":
+                    TVSelectRunningProcess();
+                    break;
+                case "Set Game Path":
+                    TVFileBrowser(comboGame);
+                    break;
+                case "Set Trainer Path":
+                    TVFileBrowser(comboTrainer);
+                    break;
+                case "Set Additional Injection 1":
+                    TVFileBrowser(comboAdditional[0]);
+                    break;
+                case "Set Additional Injection 2":
+                    TVFileBrowser(comboAdditional[1]);
+                    break;
+                case "Set Additional Injection 3":
+                    TVFileBrowser(comboAdditional[2]);
+                    break;
+                case "Set Additional Injection 4":
+                    TVFileBrowser(comboAdditional[3]);
+                    break;
+                case "Configure DLL Injections":
+                    TVConfigureDLLInjections();
+                    break;
+                case "Manage Profiles":
+                    TVManageProfiles();
+                    break;
+                case "Launch Application":
+                    BtnLaunch_Click(null, EventArgs.Empty);
+                    break;
+                case "View Console Output":
+                    TVViewConsoleOutput();
+                    break;
+                case "PAUSE GAME [BETA]":
+                    if (gameProcess == null)
+                    {
+                        LogStatus("No game process to pause.");
+                    }
+                    else
+                    {
+                        if (!gameFrozen)
+                        {
+                            if (FreezeGame())
+                            {
+                                gameFrozen = true;
+                                LogStatus("Game paused.");
+                            }
+                        }
+                        else
+                        {
+                            UnfreezeGame();
+                            gameFrozen = false;
+                            LogStatus("Game resumed.");
+                        }
+                    }
+                    break;
+                case "Exit TV Mode":
+                    chkTVMode.Checked = false;
+                    break;
+                default:
+                    break;
+            }
+            RefreshTVInfo();
+        }
+
+        private bool FreezeGame()
+        {
+            if (gameProcess == null)
+            {
+                LogStatus("No process to freeze.");
+                return false;
+            }
+            try
+            {
+                foreach (ProcessThread thread in gameProcess.Threads)
+                {
+                    IntPtr hThread = NativeMethods.OpenThread(NativeMethods.THREAD_SUSPEND_RESUME, false, (uint)thread.Id);
+                    if (hThread == IntPtr.Zero)
+                    {
+                        LogStatus($"Failed to open thread {thread.Id}.");
+                        continue;
+                    }
+                    uint suspendCount = NativeMethods.SuspendThread(hThread);
+                    LogStatus($"Suspended thread {thread.Id} (count {suspendCount}).");
+                    NativeMethods.CloseHandle(hThread);
+                }
+                LogStatus("Process frozen.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogStatus("Freeze error: " + ex.Message);
+                return false;
+            }
+        }
+
+        private void UnfreezeGame()
+        {
+            if (gameProcess == null)
+            {
+                LogStatus("No process to unfreeze.");
+                return;
+            }
+            try
+            {
+                foreach (ProcessThread thread in gameProcess.Threads)
+                {
+                    IntPtr hThread = NativeMethods.OpenThread(NativeMethods.THREAD_SUSPEND_RESUME, false, (uint)thread.Id);
+                    if (hThread != null)
+                    {
+                        while (NativeMethods.ResumeThread(hThread) > 0) { }
+                        LogStatus($"Resumed thread {thread.Id}.");
+                        NativeMethods.CloseHandle(hThread);
+                    }
+                }
+                LogStatus("Process unfrozen.");
+            }
+            catch (Exception ex)
+            {
+                LogStatus("Unfreeze error: " + ex.Message);
+            }
+        }
+
+        private void TVSelectRunningProcess()
+        {
+            try
+            {
+                Panel panel = new Panel();
+                panel.BackColor = Color.FromArgb(45,45,48);
+                panel.Dock = DockStyle.Fill;
+                panel.Padding = new Padding(20);
+                ListView processList = new ListView();
+                processList.Dock = DockStyle.Fill;
+                processList.View = View.Details;
+                processList.FullRowSelect = true;
+                processList.GridLines = true;
+                processList.HeaderStyle = ColumnHeaderStyle.None;
+                processList.Font = new Font("Tahoma",18,FontStyle.Bold);
+                processList.ForeColor = Color.LightGray;
+                processList.BackColor = Color.FromArgb(30,30,30);
+                processList.Margin = new Padding(10);
+                processList.Columns.Add("Process", -2, HorizontalAlignment.Center);
+                processList.Columns.Add("PID", -2, HorizontalAlignment.Center);
+                Process[] procs = ProcessHelper.GetProcesses();
+                if (procs == null || procs.Length == 0)
+                {
+                    MessageBox.Show("No processes found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                foreach (Process p in procs)
+                {
+                    try
+                    {
+                        ListViewItem lvi = new ListViewItem(p.ProcessName);
+                        lvi.SubItems.Add(p.Id.ToString());
+                        processList.Items.Add(lvi);
+                    }
+                    catch { }
+                }
+                if (processList.Items.Count > 0)
+                {
+                    processList.SelectedIndices.Clear();
+                    processList.SelectedIndices.Add(0);
+                }
+                processList.KeyDown += (s,e) =>
+                {
+                    try 
+                    {
+                        if (e.KeyCode == Keys.Enter && processList.SelectedItems.Count > 0)
+                        {
+                            string sel = processList.SelectedItems[0].SubItems[0].Text;
+                            foreach (Process p in procs)
+                            {
+                                if (p.ProcessName == sel)
+                                {
+                                    gameProcess = p;
+                                    LogStatus("Process selected: " + p.ProcessName + " (PID " + p.Id + ")");
+                                    break;
+                                }
+                            }
+                            HideOverlay();
+                            e.Handled = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStatus("Error in process list: " + ex.Message);
+                    }
+                };
+                panel.Controls.Add(processList);
+                ShowOverlay(panel);
+            }
+            catch(Exception ex)
+            {
+                LogStatus("TVSelectRunningProcess error: " + ex.Message);
+            }
+        }
+
+        private void TVFileBrowser(Control target)
+        {
+            ShowIntegratedFileBrowser(target);
+        }
+
+        private void TVFileBrowserForTextBox(TextBox target)
+        {
+            ShowIntegratedFileBrowser(target);
+        }
+
+        private void TVConfigureDLLInjections()
+        {
+            try
+            {
+                Panel panel = new Panel();
+                panel.BackColor = Color.FromArgb(45,45,48);
+                panel.Dock = DockStyle.Fill;
+                TableLayoutPanel tbl = new TableLayoutPanel();
+                tbl.Dock = DockStyle.Fill;
+                tbl.RowCount = 4;
+                tbl.ColumnCount = 3;
+                tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,30));
+                tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
+                tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,20));
+                for (int i = 0; i < 4; i++)
+                {
+                    Label lbl = new Label() { Text = "Additional Injection " + (i+1) + " (Optional)", Dock = DockStyle.Fill, ForeColor = Color.White, Padding = new Padding(5) };
+                    TextBox tb = new TextBox() { Text = comboAdditional[i].Text, Dock = DockStyle.Fill, Font = new Font("Tahoma",16,FontStyle.Bold), Margin = new Padding(5) };
+                    // In TV mode use a standard CheckBox (no Button appearance)
+                    CheckBox chk = new CheckBox() { Checked = chkAdditional[i].Checked, Dock = DockStyle.Fill, Font = new Font("Tahoma",16,FontStyle.Bold), ForeColor = Color.White, Margin = new Padding(5), Text = "Inject", TextAlign = ContentAlignment.MiddleLeft };
+                    int index = i;
+                    chk.CheckedChanged += (s,e) => { chkAdditional[index].Checked = chk.Checked; };
+                    Button btnBrowse = CreateFlatButton("Browse");
+                    btnBrowse.Click += (s,e) => { TVFileBrowserForTextBox(tb); };
+                    tbl.Controls.Add(lbl, 0, i);
+                    tbl.Controls.Add(tb, 1, i);
+                    Panel pnl = new Panel() { Dock = DockStyle.Fill, Margin = new Padding(5) };
+                    pnl.Controls.Add(chk);
+                    pnl.Controls.Add(btnBrowse);
+                    btnBrowse.Location = new Point(150,0);
+                    tbl.Controls.Add(pnl, 2, i);
+                    tb.TextChanged += (s,e) => { comboAdditional[index].Text = tb.Text; };
+                }
+                Button btnOk = CreateFlatButton("OK");
+                btnOk.Dock = DockStyle.Bottom;
+                btnOk.Height = 50;
+                btnOk.Click += (s,e) => { HideOverlay(); };
+                panel.Controls.Add(tbl);
+                panel.Controls.Add(btnOk);
+                ShowOverlay(panel);
+            }
+            catch(Exception ex)
+            {
+                LogStatus("TVConfigureDLLInjections error: " + ex.Message);
+            }
+        }
+
+        private void TVManageProfiles()
+        {
+            try
+            {
+                Panel panel = new Panel();
+                panel.BackColor = Color.FromArgb(45,45,48);
+                panel.Dock = DockStyle.Fill;
+                TableLayoutPanel tbl = new TableLayoutPanel();
+                tbl.Dock = DockStyle.Fill;
+                tbl.RowCount = 2;
+                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 80));
+                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
+                panel.Controls.Add(tbl);
+
+                ListView lb = new ListView();
+                lb.Dock = DockStyle.Fill;
+                lb.View = View.Details;
+                lb.FullRowSelect = true;
+                lb.GridLines = true;
+                lb.HeaderStyle = ColumnHeaderStyle.None;
+                lb.Font = new Font("Tahoma",18,FontStyle.Bold);
+                lb.ForeColor = Color.White;
+                lb.BackColor = Color.FromArgb(30,30,30);
+                lb.Margin = new Padding(10);
+                lb.Columns.Add("Profile", -2, HorizontalAlignment.Center);
+                if (Directory.Exists(profilesDir))
+                {
+                    string[] files = Directory.GetFiles(profilesDir, "*.ini");
+                    foreach (string file in files)
+                    {
+                        string name = Path.GetFileNameWithoutExtension(file);
+                        if (name.ToLower() != "last")
+                            lb.Items.Add(new ListViewItem(name));
+                    }
+                }
+                if (lb.Items.Count > 0)
+                {
+                    lb.SelectedIndices.Clear();
+                    lb.SelectedIndices.Add(0);
+                }
+                tbl.Controls.Add(lb, 0, 0);
+
+                FlowLayoutPanel panelButtons = new FlowLayoutPanel();
+                panelButtons.Dock = DockStyle.Fill;
+                panelButtons.Padding = new Padding(10);
+                Button btnLoad = CreateFlatButton("Load");
+                btnLoad.Width = 150;
+                btnLoad.Height = 50;
+                btnLoad.Click += (s,e) =>
+                {
+                    if (lb.SelectedItems.Count > 0)
+                    {
+                        string profileName = lb.SelectedItems[0].Text;
+                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
+                        if (File.Exists(filePath))
+                        {
+                            LoadProfile(filePath);
+                            LogStatus("Profile loaded: " + profileName);
+                        }
+                    }
+                };
+                Button btnSave = CreateFlatButton("Save");
+                btnSave.Width = 150;
+                btnSave.Height = 50;
+                btnSave.Click += (s,e) =>
+                {
+                    string profileName = comboProfiles.Text.Trim();
+                    if (!string.IsNullOrEmpty(profileName))
+                    {
+                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
+                        SaveProfile(filePath);
+                        LogStatus("Profile saved: " + profileName);
+                        lb.Items.Clear();
+                        if (Directory.Exists(profilesDir))
+                        {
+                            string[] files = Directory.GetFiles(profilesDir, "*.ini");
+                            foreach (string file in files)
+                            {
+                                string name = Path.GetFileNameWithoutExtension(file);
+                                if (name.ToLower() != "last")
+                                    lb.Items.Add(new ListViewItem(name));
+                            }
+                        }
+                    }
+                };
+                Button btnDelete = CreateFlatButton("Delete");
+                btnDelete.Width = 150;
+                btnDelete.Height = 50;
+                btnDelete.Click += (s,e) =>
+                {
+                    if (lb.SelectedItems.Count > 0)
+                    {
+                        string profileName = lb.SelectedItems[0].Text;
+                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
+                        if (File.Exists(filePath))
+                        {
+                            var result = MessageBox.Show($"Delete profile '{profileName}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                            if (result == DialogResult.Yes)
+                            {
+                                File.Delete(filePath);
+                                LogStatus("Profile deleted: " + profileName);
+                                lb.Items.Remove(lb.SelectedItems[0]);
+                            }
+                        }
+                    }
+                };
+                panelButtons.Controls.Add(btnLoad);
+                panelButtons.Controls.Add(btnSave);
+                panelButtons.Controls.Add(btnDelete);
+                tbl.Controls.Add(panelButtons, 0, 1);
+
+                ShowOverlay(panel);
+            }
+            catch(Exception ex)
+            {
+                LogStatus("TVManageProfiles error: " + ex.Message);
+            }
+        }
+
+        private void TVViewConsoleOutput()
+        {
+            try
+            {
+                Panel panel = new Panel();
+                panel.BackColor = Color.FromArgb(45,45,48);
+                panel.Dock = DockStyle.Fill;
+                TextBox tb = new TextBox();
+                tb.Multiline = true;
+                tb.ReadOnly = true;
+                tb.ScrollBars = ScrollBars.Vertical;
+                tb.Dock = DockStyle.Fill;
+                tb.Font = new Font("Tahoma", 22, FontStyle.Bold);
+                tb.BackColor = Color.FromArgb(30,30,30);
+                tb.ForeColor = Color.White;
+                tb.Margin = new Padding(10);
+                tb.Text = txtStatusLog.Text;
+                panel.Controls.Add(tb);
+                ShowOverlay(panel);
+            }
+            catch(Exception ex)
+            {
+                LogStatus("TVViewConsoleOutput error: " + ex.Message);
+            }
+        }
+
+        private void SetupTVModePanel()
+        {
+            tvModePanel = new Panel();
+            tvModePanel.Dock = DockStyle.Fill;
+            tvModePanel.BackColor = Color.FromArgb(45,45,48);
+            tvModePanel.Visible = false;
+            this.Controls.Add(tvModePanel);
+
+            TableLayoutPanel tvLayout = new TableLayoutPanel();
+            tvLayout.Dock = DockStyle.Fill;
+            tvLayout.RowCount = 3;
+            tvLayout.ColumnCount = 1;
+            tvLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 15));
+            tvLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
+            tvLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 15));
+            tvModePanel.Controls.Add(tvLayout);
+
+            // Updated TV Header Panel with centered text using a TableLayoutPanel.
+            Panel tvHeaderPanel = new Panel();
+            tvHeaderPanel.Dock = DockStyle.Fill;
+            tvHeaderPanel.BackColor = Color.FromArgb(45,45,48);
+            TableLayoutPanel headerLayout = new TableLayoutPanel();
+            headerLayout.Dock = DockStyle.Fill;
+            headerLayout.ColumnCount = 2;
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            tvHeaderPanel.Controls.Add(headerLayout);
+
+            Button btnTVLaunch = CreateFlatButton("Launch");
+            btnTVLaunch.Font = new Font("Tahoma", 24, FontStyle.Bold);
+            btnTVLaunch.Dock = DockStyle.Fill;
+            btnTVLaunch.Width = 150;
+            btnTVLaunch.Click += (s,e) => BtnLaunch_Click(null, EventArgs.Empty);
+
+            Label lblTVHeader = new Label();
+            lblTVHeader.Text = "CHOOCHOO LOADER (Steam Deck Mode)";
+            lblTVHeader.Font = new Font("Tahoma", 24, FontStyle.Bold);
+            lblTVHeader.ForeColor = Color.LightGray;
+            lblTVHeader.Dock = DockStyle.Fill;
+            lblTVHeader.TextAlign = ContentAlignment.MiddleCenter;
+
+            headerLayout.Controls.Add(btnTVLaunch, 0, 0);
+            headerLayout.Controls.Add(lblTVHeader, 1, 0);
+            tvLayout.Controls.Add(tvHeaderPanel, 0, 0);
+
+            Panel tvMenuPanel = new Panel();
+            tvMenuPanel.Dock = DockStyle.Fill;
+            tvMenuPanel.BackColor = Color.FromArgb(30,30,30);
+            tvModeList = new ListView();
+            tvModeList.Dock = DockStyle.Fill;
+            tvModeList.View = View.List;
+            tvModeList.Font = new Font("Tahoma", 22, FontStyle.Bold);
+            tvModeList.ForeColor = Color.LightGray;
+            tvModeList.BackColor = Color.FromArgb(30,30,30);
+            string[] menuItems = new string[]
+            {
+                "Select Running Process",
+                "Set Game Path",
+                "Set Trainer Path",
+                "Set Additional Injection 1",
+                "Set Additional Injection 2",
+                "Set Additional Injection 3",
+                "Set Additional Injection 4",
+                "Configure DLL Injections",
+                "Manage Profiles",
+                "Launch Application",
+                "View Console Output",
+                "PAUSE GAME [BETA]",
+                "Exit TV Mode"
+            };
+            tvModeList.Items.Clear();
+            foreach (string item in menuItems)
+                tvModeList.Items.Add(new ListViewItem(item));
+            if (tvModeList.Items.Count > 0)
+            {
+                tvModeList.SelectedIndices.Clear();
+                tvModeList.SelectedIndices.Add(0);
+            }
+            tvModeList.KeyDown += (s,e) =>
+            {
+                try 
+                {
+                    if (e.KeyCode == Keys.Enter)
+                    {
+                        if (tvModeList.SelectedItems.Count > 0)
+                        {
+                            string action = tvModeList.SelectedItems[0].Text;
+                            HandleTVModeAction(action);
+                        }
+                        e.Handled = true;
+                    }
+                    else if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B)
+                    {
+                        chkTVMode.Checked = false;
+                        e.Handled = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogStatus("TVMode list error: " + ex.Message);
+                }
+            };
+            tvMenuPanel.Controls.Add(tvModeList);
+            tvLayout.Controls.Add(tvMenuPanel, 0, 1);
+
+            Panel tvFooterPanel = new Panel();
+            tvFooterPanel.Dock = DockStyle.Fill;
+            tvFooterPanel.BackColor = Color.FromArgb(50,50,50);
+            tvInfoText = new TextBox();
+            tvInfoText.Dock = DockStyle.Fill;
+            tvInfoText.Multiline = true;
+            tvInfoText.ReadOnly = true;
+            tvInfoText.Font = new Font("Tahoma", 24, FontStyle.Bold);
+            tvInfoText.BackColor = Color.FromArgb(30,30,30);
+            tvInfoText.ForeColor = Color.LightGray;
+            tvFooterPanel.Controls.Add(tvInfoText);
+            tvLayout.Controls.Add(tvFooterPanel, 0, 2);
+        }
+
+        private void SaveSettings()
+        {
+            try {
+                using (StreamWriter sw = new StreamWriter(settingsFile))
+                {
+                    sw.WriteLine(chkLoadTVOnLaunch.Checked);
+                    sw.WriteLine(chkTVMode.Checked);
+                    sw.WriteLine(chkAutoLaunch.Checked);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogStatus("Error saving settings: " + ex.Message);
+            }
+        }
+
+        private void LoadSettings()
+        {
+            try {
+                if (File.Exists(settingsFile))
+                {
+                    using (StreamReader sr = new StreamReader(settingsFile))
+                    {
+                        bool loadTV, tv, auto;
+                        if (bool.TryParse(sr.ReadLine(), out loadTV))
+                            chkLoadTVOnLaunch.Checked = loadTV;
+                        if (bool.TryParse(sr.ReadLine(), out tv))
+                            chkTVMode.Checked = tv;
+                        if (bool.TryParse(sr.ReadLine(), out auto))
+                            chkAutoLaunch.Checked = auto;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogStatus("Error loading settings: " + ex.Message);
+            }
+        }
+
+        private void ShowOverlay(Control control)
+        {
+            if (overlayPanel != null)
+            {
+                overlayPanel.Controls.Clear();
+                control.Dock = DockStyle.Fill;
+                overlayPanel.Controls.Add(control);
+                overlayPanel.Visible = true;
+                overlayPanel.BringToFront();
+                control.Focus();
+            }
+        }
+
+        private void HideOverlay()
+        {
+            if (overlayPanel != null)
+            {
+                overlayPanel.Visible = false;
+                overlayPanel.Controls.Clear();
+            }
+            if (tvModePanel != null && tvModePanel.Visible)
+            {
+                if (tvModeList != null && tvModeList.Items.Count > 0)
+                {
+                    tvModeList.SelectedIndices.Clear();
+                    tvModeList.SelectedIndices.Add(0);
+                }
+                tvModePanel.Focus();
+            }
+            else if (mainPanel != null)
+            {
+                mainPanel.Focus();
+            }
+        }
+
+        private void LogStatus(string message)
+        {
+            txtStatusLog.AppendText(message.ToUpper() + Environment.NewLine);
+        }
+
+        private void LogTool(string message)
+        {
+            txtToolOutput.AppendText(message + Environment.NewLine);
+        }
+
+        private void PopulateRunningExes()
+        {
+            comboRunningExes.Items.Clear();
+            LogStatus("Scanning running processes...");
+            Process[] procs = ProcessHelper.GetProcesses();
+            foreach (Process p in procs)
+            {
+                try
+                {
+                    comboRunningExes.Items.Add(p);
+                    LogStatus($"Detected: {p.ProcessName} (PID {p.Id})");
+                }
+                catch (Exception ex)
+                {
+                    LogStatus("Error: " + ex.Message);
+                }
+            }
+            if (comboRunningExes.Items.Count == 0)
+            {
+                foreach (Process p in Process.GetProcesses())
+                {
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(p.MainWindowTitle))
+                        {
+                            comboRunningExes.Items.Add(p);
+                            LogStatus("Detected (fallback): " + p.ProcessName);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            if (comboRunningExes.Items.Count > 0)
+            {
+                comboRunningExes.SelectedIndex = 0;
+            }
+        }
+
+        private void ProcessCommandLineArgs()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 1; i < args.Length; i++)
+            {
+                string arg = args[i].ToLower();
+                if (arg == "-p" || arg == "--profile")
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        string profileName = args[i+1];
+                        comboProfiles.Text = profileName;
+                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
+                        if (File.Exists(filePath))
+                            LoadProfile(filePath);
+                        i++;
+                    }
+                }
+                else if (arg == "-autolaunch")
+                {
+                    chkAutoLaunch.Checked = true;
+                }
+                else if (arg == "-dllinject")
+                {
+                    int j = i+1;
+                    int index = 0;
+                    while (j < args.Length && !args[j].StartsWith("-") && index < 4)
+                    {
+                        comboAdditional[index].Text = args[j];
+                        chkAdditional[index].Checked = true;
+                        index++;
+                        j++;
+                    }
+                    i = j - 1;
+                }
+            }
+            if (chkAutoLaunch.Checked)
+            {
+                var launchTimer = new WinFormsTimer { Interval = 2000 };
+                launchTimer.Tick += (s,e) =>
+                {
+                    launchTimer.Stop();
+                    BtnLaunch_Click(null, EventArgs.Empty);
+                };
+                launchTimer.Start();
+            }
+        }
+
         private Button CreateFlatButton(string text)
         {
             Button btn = new Button();
@@ -1378,7 +2292,7 @@ namespace ChooChooApp
                 if (fileBrowserList.Items.Count > 0)
                 {
                     fileBrowserList.SelectedIndices.Clear();
-                    fileBrowserList.Items[0].Selected = true;
+                    fileBrowserList.SelectedIndices.Add(0);
                 }
             }
             catch (Exception ex)
@@ -1481,7 +2395,6 @@ namespace ChooChooApp
                 }
                 if (e.KeyCode == Keys.B)
                 {
-                    // If in a process-selection overlay, pressing B should close the overlay
                     if (overlayPanel != null && overlayPanel.Visible)
                     {
                         HideOverlay();
@@ -1765,7 +2678,7 @@ namespace ChooChooApp
                     proc = LaunchTrainerViaCmd(path);
                     break;
             }
-            if(proc != null && !proc.HasExited)
+            if (proc != null && !proc.HasExited)
                 LogStatus($"Trainer: LAUNCHED using method {methodIndex+1}");
             return proc;
         }
@@ -1922,904 +2835,6 @@ namespace ChooChooApp
                 listBoxDlls.Items.Add(item);
             listBoxDlls.EndUpdate();
             try { listBoxDlls.TopIndex = topIndex; } catch { }
-        }
-
-        private void XinputTimer_Tick(object sender, EventArgs e)
-        {
-            XINPUT_STATE state;
-            uint result = XInput.XInputGetState(0, out state);
-            const short thumbDeadzone = 20000;
-            // Add a null-check for tvModePanel
-            if (tvModePanel != null && tvModePanel.Visible)
-            {
-                if (state.Gamepad.sThumbLY < -thumbDeadzone)
-                {
-                    if (!analogDownSent)
-                    {
-                        SendKeys.Send("{DOWN}");
-                        analogDownSent = true;
-                    }
-                }
-                else analogDownSent = false;
-                if (state.Gamepad.sThumbLY > thumbDeadzone)
-                {
-                    if (!analogUpSent)
-                    {
-                        SendKeys.Send("{UP}");
-                        analogUpSent = true;
-                    }
-                }
-                else analogUpSent = false;
-                bool aButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) != 0;
-                if (aButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) == 0)
-                {
-                    if (tvModeList != null && tvModeList.SelectedItems.Count > 0)
-                    {
-                        string action = tvModeList.SelectedItems[0].Text;
-                        HandleTVModeAction(action);
-                    }
-                }
-                if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) != 0 &&
-                    (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) == 0)
-                    BtnLaunch_Click(null, EventArgs.Empty);
-                prevLeftTrigger = state.Gamepad.bLeftTrigger;
-                prevRightTrigger = state.Gamepad.bRightTrigger;
-                prevXInputState = state;
-                this.Invalidate();
-                return;
-            }
-            if (this.ActiveControl is ComboBox activeCbDropdown && activeCbDropdown.DroppedDown)
-            {
-                bool dpadDown = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_DOWN) != 0;
-                bool dpadUp = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_UP) != 0;
-                int currentIndex = activeCbDropdown.SelectedIndex;
-                if (dpadDown && currentIndex < activeCbDropdown.Items.Count - 1)
-                    activeCbDropdown.SelectedIndex = currentIndex + 1;
-                if (dpadUp && currentIndex > 0)
-                    activeCbDropdown.SelectedIndex = currentIndex - 1;
-                if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_LEFT) != 0 &&
-                    (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_LEFT) == 0)
-                    SendKeys.Send("{LEFT}");
-                if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_RIGHT) != 0 &&
-                    (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_DPAD_RIGHT) == 0)
-                    SendKeys.Send("{RIGHT}");
-                bool aButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) != 0;
-                if (aButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_A) == 0)
-                {
-                    if (this.ActiveControl is ComboBox activeCb)
-                        activeCb.DroppedDown = true;
-                    else if (this.ActiveControl is Button btn)
-                        btn.PerformClick();
-                    else if (this.ActiveControl is CheckBox chk)
-                        chk.Checked = !chk.Checked;
-                    else
-                        SendKeys.Send("{ENTER}");
-                }
-            }
-            bool xButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_X) != 0;
-            if (xButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_X) == 0)
-                SendKeys.Send("{UP}");
-            bool yButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_Y) != 0;
-            if (yButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_Y) == 0)
-            {
-                if (fileBrowserPanel.Visible)
-                    RefreshFileBrowserList();
-                else if (tvModePanel != null && tvModePanel.Visible)
-                    RefreshTVInfo();
-            }
-            bool bButton = (state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_B) != 0;
-            if (bButton && (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_B) == 0)
-            {
-                if (overlayPanel != null && overlayPanel.Visible)
-                    HideOverlay();
-                else if (fileBrowserPanel != null && fileBrowserPanel.Visible)
-                    fileBrowserPanel.Visible = false;
-                else if (chkTVMode.Checked)
-                    chkTVMode.Checked = false;
-            }
-            if ((state.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) != 0 &&
-                (prevXInputState.Gamepad.wButtons & XInputConstants.XINPUT_GAMEPAD_START) == 0)
-                BtnLaunch_Click(null, EventArgs.Empty);
-            if (state.Gamepad.bLeftTrigger > 30 && prevLeftTrigger <= 30)
-                tabControl.SelectedIndex = (tabControl.SelectedIndex - 1 + tabControl.TabCount) % tabControl.TabCount;
-            if (state.Gamepad.bRightTrigger > 30 && prevRightTrigger <= 30)
-                tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
-            if (state.Gamepad.sThumbLY < -thumbDeadzone)
-            {
-                if (!analogDownSent)
-                {
-                    SendKeys.Send("{DOWN}");
-                    analogDownSent = true;
-                }
-            }
-            else analogDownSent = false;
-            if (state.Gamepad.sThumbLY > thumbDeadzone)
-            {
-                if (!analogUpSent)
-                {
-                    SendKeys.Send("{UP}");
-                    analogUpSent = true;
-                }
-            }
-            else analogUpSent = false;
-            if (state.Gamepad.sThumbLX < -thumbDeadzone)
-            {
-                if (!analogLeftSent)
-                {
-                    SendKeys.Send("{LEFT}");
-                    analogLeftSent = true;
-                }
-            }
-            else analogLeftSent = false;
-            if (state.Gamepad.sThumbLX > thumbDeadzone)
-            {
-                if (!analogRightSent)
-                {
-                    SendKeys.Send("{RIGHT}");
-                    analogRightSent = true;
-                }
-            }
-            else analogRightSent = false;
-            prevLeftTrigger = state.Gamepad.bLeftTrigger;
-            prevRightTrigger = state.Gamepad.bRightTrigger;
-            prevXInputState = state;
-            this.Invalidate();
-        }
-
-        public void RefreshTVInfo()
-        {
-            string configInfo = "Game Path (Optional): " + comboGame.Text + Environment.NewLine +
-                                "Trainer Path: " + comboTrainer.Text + Environment.NewLine;
-            for (int i = 0; i < 4; i++)
-            {
-                configInfo += $"Additional {i+1} (Optional): {(string.IsNullOrEmpty(comboAdditional[i].Text) ? "[Not Set]" : comboAdditional[i].Text)} - {(chkAdditional[i].Checked ? "Inject" : "Launch/Inject (Optional)")}" + Environment.NewLine;
-            }
-            configInfo += Environment.NewLine + "Recent Log:" + Environment.NewLine + txtStatusLog.Text;
-            if(tvInfoText != null)
-                tvInfoText.Text = configInfo;
-            else
-                LogStatus("tvInfoText is null in RefreshTVInfo");
-        }
-
-        // Revised ToggleTVMode: when entering TV mode, dispose any existing tvModePanel and re-create it.
-        private void ToggleTVMode()
-        {
-            if (chkTVMode.Checked)
-            {
-                if (tvModePanel != null)
-                {
-                    this.Controls.Remove(tvModePanel);
-                    tvModePanel.Dispose();
-                    tvModePanel = null;
-                }
-                SetupTVModePanel();
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.Bounds = Screen.PrimaryScreen.Bounds;
-                this.TopMost = true;
-                if (mainPanel != null)
-                    mainPanel.Visible = false;
-                tvModePanel.Visible = true;
-                tvModePanel.BringToFront();
-                if (tvModeList != null && tvModeList.Items.Count > 0)
-                {
-                    tvModeList.SelectedIndices.Clear();
-                    tvModeList.SelectedIndices.Add(0);
-                    tvModeList.Focus();
-                }
-            }
-            else
-            {
-                if (tvModePanel != null)
-                {
-                    tvModePanel.Visible = false;
-                    this.Controls.Remove(tvModePanel);
-                    tvModePanel.Dispose();
-                    tvModePanel = null;
-                }
-                if (mainPanel != null)
-                {
-                    mainPanel.Visible = true;
-                    mainPanel.BringToFront();
-                }
-                this.TopMost = false;
-                this.FormBorderStyle = FormBorderStyle.FixedDialog;
-                if (originalBounds != Rectangle.Empty)
-                    this.Bounds = originalBounds;
-                this.WindowState = FormWindowState.Normal;
-                this.ClientSize = new Size(1200,750);
-            }
-        }
-
-        private void HandleTVModeAction(string action)
-        {
-            switch (action)
-            {
-                case "Select Running Process":
-                    TVSelectRunningProcess();
-                    break;
-                case "Set Game Path":
-                    TVFileBrowser(comboGame);
-                    break;
-                case "Set Trainer Path":
-                    TVFileBrowser(comboTrainer);
-                    break;
-                case "Set Additional Injection 1":
-                    TVFileBrowser(comboAdditional[0]);
-                    break;
-                case "Set Additional Injection 2":
-                    TVFileBrowser(comboAdditional[1]);
-                    break;
-                case "Set Additional Injection 3":
-                    TVFileBrowser(comboAdditional[2]);
-                    break;
-                case "Set Additional Injection 4":
-                    TVFileBrowser(comboAdditional[3]);
-                    break;
-                case "Configure DLL Injections":
-                    TVConfigureDLLInjections();
-                    break;
-                case "Manage Profiles":
-                    TVManageProfiles();
-                    break;
-                case "Freeze Other Windows":
-                    if (!areOtherWindowsFrozen)
-                        ToggleFreezeOtherWindows();
-                    break;
-                case "Unfreeze Other Windows":
-                    if (areOtherWindowsFrozen)
-                        ToggleFreezeOtherWindows();
-                    break;
-                case "Launch Application":
-                    BtnLaunch_Click(null, EventArgs.Empty);
-                    break;
-                case "View Console Output":
-                    TVViewConsoleOutput();
-                    break;
-                case "Exit TV Mode":
-                    chkTVMode.Checked = false;
-                    break;
-                default:
-                    break;
-            }
-            RefreshTVInfo();
-        }
-
-        // Updated TVSelectRunningProcess: now handles ESC and B keys, and accepts A (or Enter) to select a process.
-        private void TVSelectRunningProcess()
-        {
-            try
-            {
-                Panel panel = new Panel();
-                panel.BackColor = Color.FromArgb(45,45,48);
-                panel.Dock = DockStyle.Fill;
-                panel.Padding = new Padding(20);
-                ListView processList = new ListView();
-                processList.Dock = DockStyle.Fill;
-                processList.View = View.Details;
-                processList.FullRowSelect = true;
-                processList.GridLines = true;
-                processList.HeaderStyle = ColumnHeaderStyle.None;
-                processList.Font = new Font("Tahoma",18,FontStyle.Bold);
-                processList.ForeColor = Color.LightGray;
-                processList.BackColor = Color.FromArgb(30,30,30);
-                processList.Margin = new Padding(10);
-                processList.Columns.Add("Process",-2,HorizontalAlignment.Center);
-                processList.Columns.Add("PID",-2,HorizontalAlignment.Center);
-                Process[] procs = ProcessHelper.GetProcesses();
-                if (procs == null || procs.Length == 0)
-                {
-                    MessageBox.Show("No processes found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                foreach (Process p in procs)
-                {
-                    try
-                    {
-                        ListViewItem lvi = new ListViewItem(p.ProcessName);
-                        lvi.SubItems.Add(p.Id.ToString());
-                        processList.Items.Add(lvi);
-                    }
-                    catch { }
-                }
-                if (processList.Items.Count > 0)
-                {
-                    processList.SelectedIndices.Clear();
-                    processList.SelectedIndices.Add(0);
-                }
-                processList.KeyDown += (s,e) =>
-                {
-                    try 
-                    {
-                        if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B)
-                        {
-                            HideOverlay();
-                            e.Handled = true;
-                            return;
-                        }
-                        if ((e.KeyCode == Keys.Enter || e.KeyCode == Keys.A) && processList.SelectedItems.Count > 0)
-                        {
-                            string sel = processList.SelectedItems[0].SubItems[0].Text;
-                            foreach (Process p in procs)
-                            {
-                                if (p.ProcessName == sel)
-                                {
-                                    gameProcess = p;
-                                    LogStatus("Process selected: " + p.ProcessName + " (PID " + p.Id + ")");
-                                    break;
-                                }
-                            }
-                            HideOverlay();
-                            e.Handled = true;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogStatus("Error in process list: " + ex.Message);
-                    }
-                };
-                panel.Controls.Add(processList);
-                ShowOverlay(panel);
-            }
-            catch(Exception ex)
-            {
-                LogStatus("TVSelectRunningProcess error: " + ex.Message);
-            }
-        }
-
-        private void TVFileBrowser(Control target)
-        {
-            ShowIntegratedFileBrowser(target);
-        }
-
-        private void TVFileBrowserForTextBox(TextBox target)
-        {
-            ShowIntegratedFileBrowser(target);
-        }
-
-        private void TVConfigureDLLInjections()
-        {
-            try
-            {
-                Panel panel = new Panel();
-                panel.BackColor = Color.FromArgb(45,45,48);
-                panel.Dock = DockStyle.Fill;
-                TableLayoutPanel tbl = new TableLayoutPanel();
-                tbl.Dock = DockStyle.Fill;
-                tbl.RowCount = 4;
-                tbl.ColumnCount = 3;
-                tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,30));
-                tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-                tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,20));
-                for (int i = 0; i < 4; i++)
-                {
-                    Label lbl = new Label() { Text = "Additional Injection " + (i+1) + " (Optional)", Dock = DockStyle.Fill, ForeColor = Color.White, Padding = new Padding(5) };
-                    TextBox tb = new TextBox() { Text = comboAdditional[i].Text, Dock = DockStyle.Fill, Font = new Font("Tahoma",16,FontStyle.Bold), Margin = new Padding(5) };
-                    CheckBox chk = new CheckBox() { Checked = chkAdditional[i].Checked, Dock = DockStyle.Fill, Font = new Font("Tahoma",16,FontStyle.Bold), ForeColor = Color.White, Margin = new Padding(5), TextAlign = ContentAlignment.MiddleLeft };
-                    int index = i;
-                    chk.CheckedChanged += (s,e) => { chkAdditional[index].Checked = chk.Checked; };
-                    Button btnBrowse = CreateFlatButton("Browse");
-                    btnBrowse.Click += (s,e) => { TVFileBrowserForTextBox(tb); };
-                    tbl.Controls.Add(lbl, 0, i);
-                    tbl.Controls.Add(tb, 1, i);
-                    Panel pnl = new Panel() { Dock = DockStyle.Fill, Margin = new Padding(5) };
-                    pnl.Controls.Add(chk);
-                    pnl.Controls.Add(btnBrowse);
-                    btnBrowse.Location = new Point(150,0);
-                    tbl.Controls.Add(pnl, 2, i);
-                    tb.TextChanged += (s,e) => { comboAdditional[index].Text = tb.Text; };
-                }
-                Button btnOk = CreateFlatButton("OK");
-                btnOk.Dock = DockStyle.Bottom;
-                btnOk.Height = 50;
-                btnOk.Click += (s,e) => { HideOverlay(); };
-                panel.Controls.Add(tbl);
-                panel.Controls.Add(btnOk);
-                ShowOverlay(panel);
-            }
-            catch(Exception ex)
-            {
-                LogStatus("TVConfigureDLLInjections error: " + ex.Message);
-            }
-        }
-
-        private void TVManageProfiles()
-        {
-            try
-            {
-                Panel panel = new Panel();
-                panel.BackColor = Color.FromArgb(45,45,48);
-                panel.Dock = DockStyle.Fill;
-                TableLayoutPanel tbl = new TableLayoutPanel();
-                tbl.Dock = DockStyle.Fill;
-                tbl.RowCount = 2;
-                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 80));
-                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-                panel.Controls.Add(tbl);
-
-                ListView lb = new ListView();
-                lb.Dock = DockStyle.Fill;
-                lb.View = View.Details;
-                lb.FullRowSelect = true;
-                lb.GridLines = true;
-                lb.HeaderStyle = ColumnHeaderStyle.None;
-                lb.Font = new Font("Tahoma",18,FontStyle.Bold);
-                lb.ForeColor = Color.White;
-                lb.BackColor = Color.FromArgb(30,30,30);
-                lb.Margin = new Padding(10);
-                lb.Columns.Add("Profile",-2,HorizontalAlignment.Center);
-                if (Directory.Exists(profilesDir))
-                {
-                    string[] files = Directory.GetFiles(profilesDir, "*.ini");
-                    foreach (string file in files)
-                    {
-                        string name = Path.GetFileNameWithoutExtension(file);
-                        if (name.ToLower() != "last")
-                            lb.Items.Add(new ListViewItem(name));
-                    }
-                }
-                if (lb.Items.Count > 0)
-                {
-                    lb.SelectedIndices.Clear();
-                    lb.SelectedIndices.Add(0);
-                }
-                tbl.Controls.Add(lb, 0, 0);
-
-                FlowLayoutPanel panelButtons = new FlowLayoutPanel();
-                panelButtons.Dock = DockStyle.Fill;
-                panelButtons.Padding = new Padding(10);
-                Button btnLoad = CreateFlatButton("Load");
-                btnLoad.Width = 150;
-                btnLoad.Height = 50;
-                btnLoad.Click += (s,e) =>
-                {
-                    if (lb.SelectedItems.Count > 0)
-                    {
-                        string profileName = lb.SelectedItems[0].Text;
-                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
-                        if (File.Exists(filePath))
-                        {
-                            LoadProfile(filePath);
-                            LogStatus("Profile loaded: " + profileName);
-                        }
-                    }
-                };
-                Button btnSave = CreateFlatButton("Save");
-                btnSave.Width = 150;
-                btnSave.Height = 50;
-                btnSave.Click += (s,e) =>
-                {
-                    string profileName = comboProfiles.Text.Trim();
-                    if (!string.IsNullOrEmpty(profileName))
-                    {
-                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
-                        SaveProfile(filePath);
-                        LogStatus("Profile saved: " + profileName);
-                        lb.Items.Clear();
-                        if (Directory.Exists(profilesDir))
-                        {
-                            string[] files = Directory.GetFiles(profilesDir, "*.ini");
-                            foreach (string file in files)
-                            {
-                                string name = Path.GetFileNameWithoutExtension(file);
-                                if (name.ToLower() != "last")
-                                    lb.Items.Add(new ListViewItem(name));
-                            }
-                        }
-                    }
-                };
-                Button btnDelete = CreateFlatButton("Delete");
-                btnDelete.Width = 150;
-                btnDelete.Height = 50;
-                btnDelete.Click += (s,e) =>
-                {
-                    if (lb.SelectedItems.Count > 0)
-                    {
-                        string profileName = lb.SelectedItems[0].Text;
-                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
-                        if (File.Exists(filePath))
-                        {
-                            File.Delete(filePath);
-                            LogStatus("Profile deleted: " + profileName);
-                            lb.Items.Remove(lb.SelectedItems[0]);
-                        }
-                    }
-                };
-                panelButtons.Controls.Add(btnLoad);
-                panelButtons.Controls.Add(btnSave);
-                panelButtons.Controls.Add(btnDelete);
-                tbl.Controls.Add(panelButtons, 0, 1);
-
-                ShowOverlay(panel);
-            }
-            catch(Exception ex)
-            {
-                LogStatus("TVManageProfiles error: " + ex.Message);
-            }
-        }
-
-        private void TVViewConsoleOutput()
-        {
-            try
-            {
-                Panel panel = new Panel();
-                panel.BackColor = Color.FromArgb(45,45,48);
-                panel.Dock = DockStyle.Fill;
-                TextBox tb = new TextBox();
-                tb.Multiline = true;
-                tb.ReadOnly = true;
-                tb.ScrollBars = ScrollBars.Vertical;
-                tb.Dock = DockStyle.Fill;
-                tb.Font = new Font("Tahoma", 22, FontStyle.Bold);
-                tb.BackColor = Color.FromArgb(30,30,30);
-                tb.ForeColor = Color.White;
-                tb.Margin = new Padding(10);
-                tb.Text = txtStatusLog.Text;
-                panel.Controls.Add(tb);
-                ShowOverlay(panel);
-            }
-            catch(Exception ex)
-            {
-                LogStatus("TVViewConsoleOutput error: " + ex.Message);
-            }
-        }
-
-        // SetupTVModePanel uses default fonts (Tahoma) for TV mode controls.
-        private void SetupTVModePanel()
-        {
-            tvModePanel = new Panel();
-            tvModePanel.Dock = DockStyle.Fill;
-            tvModePanel.BackColor = Color.FromArgb(45,45,48);
-            tvModePanel.Visible = false;
-            this.Controls.Add(tvModePanel);
-
-            TableLayoutPanel tvLayout = new TableLayoutPanel();
-            tvLayout.Dock = DockStyle.Fill;
-            tvLayout.RowCount = 3;
-            tvLayout.ColumnCount = 1;
-            tvLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 15));
-            tvLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
-            tvLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 15));
-            tvModePanel.Controls.Add(tvLayout);
-
-            Panel tvHeaderPanel = new Panel();
-            tvHeaderPanel.Dock = DockStyle.Fill;
-            tvHeaderPanel.BackColor = Color.FromArgb(45,45,48);
-            Button btnTVLaunch = CreateFlatButton("Launch");
-            // Use default Tahoma font here
-            btnTVLaunch.Font = new Font("Tahoma", 24, FontStyle.Bold);
-            btnTVLaunch.Dock = DockStyle.Left;
-            btnTVLaunch.Width = 150;
-            btnTVLaunch.Click += (s,e) => BtnLaunch_Click(null, EventArgs.Empty);
-            Label lblTVHeader = new Label();
-            lblTVHeader.Text = "CHOOCHOO LOADER (Steam Deck Mode)";
-            lblTVHeader.Font = new Font("Tahoma", 24, FontStyle.Bold);
-            lblTVHeader.ForeColor = Color.LightGray;
-            lblTVHeader.Dock = DockStyle.Fill;
-            lblTVHeader.TextAlign = ContentAlignment.MiddleCenter;
-            tvHeaderPanel.Controls.Add(btnTVLaunch);
-            tvHeaderPanel.Controls.Add(lblTVHeader);
-            tvLayout.Controls.Add(tvHeaderPanel, 0, 0);
-
-            Panel tvMenuPanel = new Panel();
-            tvMenuPanel.Dock = DockStyle.Fill;
-            tvMenuPanel.BackColor = Color.FromArgb(30,30,30);
-            tvModeList = new ListView();
-            tvModeList.Dock = DockStyle.Fill;
-            tvModeList.View = View.List;
-            // Use default Tahoma font here as well
-            tvModeList.Font = new Font("Tahoma", 22, FontStyle.Bold);
-            tvModeList.ForeColor = Color.LightGray;
-            tvModeList.BackColor = Color.FromArgb(30,30,30);
-            // New TV mode options include Freeze/Unfreeze
-            string[] menuItems = new string[]
-            {
-                "Select Running Process",
-                "Set Game Path",
-                "Set Trainer Path",
-                "Set Additional Injection 1",
-                "Set Additional Injection 2",
-                "Set Additional Injection 3",
-                "Set Additional Injection 4",
-                "Configure DLL Injections",
-                "Manage Profiles",
-                "Freeze Other Windows",
-                "Unfreeze Other Windows",
-                "Launch Application",
-                "View Console Output",
-                "Exit TV Mode"
-            };
-            tvModeList.Items.Clear();
-            foreach (string item in menuItems)
-                tvModeList.Items.Add(new ListViewItem(item));
-            if (tvModeList.Items.Count > 0)
-            {
-                tvModeList.SelectedIndices.Clear();
-                tvModeList.SelectedIndices.Add(0);
-            }
-            tvModeList.KeyDown += (s,e) =>
-            {
-                try 
-                {
-                    if (e.KeyCode == Keys.Enter)
-                    {
-                        if (tvModeList.SelectedItems.Count > 0)
-                        {
-                            string action = tvModeList.SelectedItems[0].Text;
-                            HandleTVModeAction(action);
-                        }
-                        e.Handled = true;
-                    }
-                    else if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B)
-                    {
-                        chkTVMode.Checked = false;
-                        e.Handled = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogStatus("TVMode list error: " + ex.Message);
-                }
-            };
-            tvMenuPanel.Controls.Add(tvModeList);
-            tvLayout.Controls.Add(tvMenuPanel, 0, 1);
-
-            Panel tvFooterPanel = new Panel();
-            tvFooterPanel.Dock = DockStyle.Fill;
-            tvFooterPanel.BackColor = Color.FromArgb(50,50,50);
-            tvInfoText = new TextBox();
-            tvInfoText.Dock = DockStyle.Fill;
-            tvInfoText.Multiline = true;
-            tvInfoText.ReadOnly = true;
-            tvInfoText.Font = new Font("Tahoma", 24, FontStyle.Bold);
-            tvInfoText.BackColor = Color.FromArgb(30,30,30);
-            tvInfoText.ForeColor = Color.LightGray;
-            tvFooterPanel.Controls.Add(tvInfoText);
-            tvLayout.Controls.Add(tvFooterPanel, 0, 2);
-        }
-
-        private void SaveSettings()
-        {
-            try {
-                using (StreamWriter sw = new StreamWriter(settingsFile))
-                {
-                    sw.WriteLine(chkLoadTVOnLaunch.Checked);
-                    sw.WriteLine(chkTVMode.Checked);
-                    sw.WriteLine(chkAutoLaunch.Checked);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogStatus("Error saving settings: " + ex.Message);
-            }
-        }
-
-        private void LoadSettings()
-        {
-            try {
-                if (File.Exists(settingsFile))
-                {
-                    using (StreamReader sr = new StreamReader(settingsFile))
-                    {
-                        bool loadTV, tv, auto;
-                        if (bool.TryParse(sr.ReadLine(), out loadTV))
-                            chkLoadTVOnLaunch.Checked = loadTV;
-                        if (bool.TryParse(sr.ReadLine(), out tv))
-                            chkTVMode.Checked = tv;
-                        if (bool.TryParse(sr.ReadLine(), out auto))
-                            chkAutoLaunch.Checked = auto;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogStatus("Error loading settings: " + ex.Message);
-            }
-        }
-
-        private void ShowOverlay(Control control)
-        {
-            if (overlayPanel != null)
-            {
-                overlayPanel.Controls.Clear();
-                control.Dock = DockStyle.Fill;
-                overlayPanel.Controls.Add(control);
-                overlayPanel.Visible = true;
-                overlayPanel.BringToFront();
-                control.Focus();
-            }
-        }
-
-        private void HideOverlay()
-        {
-            if (overlayPanel != null)
-            {
-                overlayPanel.Visible = false;
-                overlayPanel.Controls.Clear();
-            }
-            if (tvModePanel != null && tvModePanel.Visible)
-            {
-                if (tvModeList != null && tvModeList.Items.Count > 0)
-                {
-                    tvModeList.SelectedIndices.Clear();
-                    tvModeList.SelectedIndices.Add(0);
-                }
-                tvModePanel.Focus();
-            }
-            else if (mainPanel != null)
-            {
-                mainPanel.Focus();
-            }
-        }
-
-        // ToggleFreezeOtherWindows: if not frozen, it finds other fullscreen (or borderless fullscreen) apps,
-        // suspends their threads and stores their thread IDs; if already frozen, it resumes those threads.
-        private void ToggleFreezeOtherWindows()
-        {
-            Process current = Process.GetCurrentProcess();
-            Rectangle screenBounds = Screen.PrimaryScreen.Bounds;
-            if (!areOtherWindowsFrozen)
-            {
-                frozenThreadIds.Clear();
-                foreach (Process p in Process.GetProcesses())
-                {
-                    try {
-                        if (p.Id == current.Id) continue;
-                        if (p.MainWindowHandle == IntPtr.Zero) continue;
-                        RECT rect;
-                        if (!GetWindowRect(p.MainWindowHandle, out rect))
-                            continue;
-                        Rectangle winRect = new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
-                        int margin = 10;
-                        if (Math.Abs(winRect.Left - screenBounds.Left) <= margin &&
-                            Math.Abs(winRect.Top - screenBounds.Top) <= margin &&
-                            Math.Abs(winRect.Right - screenBounds.Right) <= margin &&
-                            Math.Abs(winRect.Bottom - screenBounds.Bottom) <= margin)
-                        {
-                            foreach (ProcessThread t in p.Threads)
-                            {
-                                IntPtr hThread = NativeMethods.OpenThread(NativeMethods.THREAD_SUSPEND_RESUME, false, (uint)t.Id);
-                                if (hThread != IntPtr.Zero)
-                                {
-                                    NativeMethods.SuspendThread(hThread);
-                                    NativeMethods.CloseHandle(hThread);
-                                    if (!frozenThreadIds.ContainsKey(p.Id))
-                                        frozenThreadIds[p.Id] = new List<uint>();
-                                    frozenThreadIds[p.Id].Add((uint)t.Id);
-                                }
-                            }
-                            LogStatus($"Process frozen: {p.ProcessName} (PID {p.Id})");
-                        }
-                    } catch { }
-                }
-                this.TopMost = true;
-                SetForegroundWindow(this.Handle);
-                this.Activate();
-                areOtherWindowsFrozen = true;
-                btnFreezeOther.Text = "Unfreeze Other Windows";
-                LogStatus("Other fullscreen windows frozen, ChooChoo is now in focus.");
-            }
-            else
-            {
-                foreach (var kvp in frozenThreadIds)
-                {
-                    int processId = kvp.Key;
-                    List<uint> threadIds = kvp.Value;
-                    foreach (uint threadId in threadIds)
-                    {
-                        try {
-                            IntPtr hThread = NativeMethods.OpenThread(NativeMethods.THREAD_SUSPEND_RESUME, false, threadId);
-                            if (hThread != IntPtr.Zero)
-                            {
-                                while (NativeMethods.ResumeThread(hThread) > 0) { }
-                                NativeMethods.CloseHandle(hThread);
-                            }
-                        } catch { }
-                    }
-                    LogStatus($"Process unfrozen (PID {processId}).");
-                }
-                frozenThreadIds.Clear();
-                areOtherWindowsFrozen = false;
-                // Stop forcing focus and allow other windows to be positioned freely.
-                this.TopMost = false;
-                btnFreezeOther.Text = "Freeze Other Windows";
-                LogStatus("Other fullscreen windows unfrozen.");
-            }
-        }
-
-        private void LogStatus(string message)
-        {
-            txtStatusLog.AppendText(message.ToUpper() + Environment.NewLine);
-        }
-
-        private void LogTool(string message)
-        {
-            txtToolOutput.AppendText(message + Environment.NewLine);
-        }
-
-        private void PopulateRunningExes()
-        {
-            comboRunningExes.Items.Clear();
-            LogStatus("Scanning running processes...");
-            Process[] procs = ProcessHelper.GetProcesses();
-            foreach (Process p in procs)
-            {
-                try
-                {
-                    comboRunningExes.Items.Add(p);
-                    LogStatus($"Detected: {p.ProcessName} (PID {p.Id})");
-                }
-                catch (Exception ex)
-                {
-                    LogStatus("Error: " + ex.Message);
-                }
-            }
-            if (comboRunningExes.Items.Count == 0)
-            {
-                foreach (Process p in Process.GetProcesses())
-                {
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(p.MainWindowTitle))
-                        {
-                            comboRunningExes.Items.Add(p);
-                            LogStatus("Detected (fallback): " + p.ProcessName);
-                        }
-                    }
-                    catch { }
-                }
-            }
-            if (comboRunningExes.Items.Count > 0)
-            {
-                comboRunningExes.SelectedIndex = 0;
-            }
-        }
-
-        private void ProcessCommandLineArgs()
-        {
-            string[] args = Environment.GetCommandLineArgs();
-            for (int i = 1; i < args.Length; i++)
-            {
-                string arg = args[i].ToLower();
-                if (arg == "-p" || arg == "--profile")
-                {
-                    if (i + 1 < args.Length)
-                    {
-                        string profileName = args[i+1];
-                        comboProfiles.Text = profileName;
-                        string filePath = Path.Combine(profilesDir, profileName + ".ini");
-                        if (File.Exists(filePath))
-                            LoadProfile(filePath);
-                        i++;
-                    }
-                }
-                else if (arg == "-autolaunch")
-                {
-                    chkAutoLaunch.Checked = true;
-                }
-                else if (arg == "-dllinject")
-                {
-                    int j = i+1;
-                    int index = 0;
-                    while (j < args.Length && !args[j].StartsWith("-") && index < 4)
-                    {
-                        comboAdditional[index].Text = args[j];
-                        chkAdditional[index].Checked = true;
-                        index++;
-                        j++;
-                    }
-                    i = j - 1;
-                }
-            }
-            if (chkAutoLaunch.Checked)
-            {
-                var launchTimer = new WinFormsTimer { Interval = 2000 };
-                launchTimer.Tick += (s,e) =>
-                {
-                    launchTimer.Stop();
-                    BtnLaunch_Click(null, EventArgs.Empty);
-                };
-                launchTimer.Start();
-            }
         }
     }
 

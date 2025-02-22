@@ -9,6 +9,6 @@
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Additional resources can be added here -->
+    <None Include="Fonts\MotivaSans.ttf" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>
