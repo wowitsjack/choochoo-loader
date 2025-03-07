@@ -7,7 +7,7 @@ A loader for SteamOS/Linux/macOS that handles launches of games with trainers/mo
 </p>
 
 <p align="center">
-  <img src="choochoo.gif" alt="Optimized GIF">
+  <img src="choochoo.gif" alt="Optimized GIF"> 
 </p>
 ---
 
