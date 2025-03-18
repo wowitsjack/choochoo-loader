@@ -3,7 +3,7 @@
 A loader for SteamOS/Linux/macOS that handles launches of games with trainers/mods (FLiNG, WeMod, etc.), patches, and up to 5 extra executables or DLLs, bypassing the issues of launching mods/patches in WINE/Proton enviroments 🔥.
 
 <p align="center"> 
-  <img src="choochoo.png" width="40%" alt="ChooChoo Logo" />
+  <img src="choochoo.png" width="40%" alt="ChooChoo Logo" /> 
 </p>
 
 <p align="center">
