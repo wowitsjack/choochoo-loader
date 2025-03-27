@@ -1,0 +1,6 @@
+C:\Users\Admin\Documents\GitHub\choochoo-neo\ChooChooEngine.App\obj\Debug\ChooChooEngine.App.csproj.AssemblyReference.cache
+C:\Users\Admin\Documents\GitHub\choochoo-neo\ChooChooEngine.App\obj\Debug\ChooChooEngine.App.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Documents\GitHub\choochoo-neo\ChooChooEngine.App\bin\Debug\ChooChooEngine.App.exe
+C:\Users\Admin\Documents\GitHub\choochoo-neo\ChooChooEngine.App\bin\Debug\ChooChooEngine.App.pdb
+C:\Users\Admin\Documents\GitHub\choochoo-neo\ChooChooEngine.App\obj\Debug\ChooChooEngine.App.exe
+C:\Users\Admin\Documents\GitHub\choochoo-neo\ChooChooEngine.App\obj\Debug\ChooChooEngine.App.pdb

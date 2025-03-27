@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "NwWGqRPhMIs=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Admin\\Documents\\GitHub\\choochoo-neo\\ChooChooEngine.App\\ChooChooEngine.App.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\.nuget\\packages\\sharpdx\\4.2.0\\sharpdx.4.2.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\sharpdx.xinput\\4.2.0\\sharpdx.xinput.4.2.0.nupkg.sha512"
+  ],
+  "logs": []
+}
