@@ -1,4 +1,10 @@
 # **🚂 ChooChoo**  
+
+[![Download ChooChoo](https://img.shields.io/badge/⬇_Download-ChooChoo_v4.1-00C853?style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases/latest/download/choochoo.exe)
+[![GitHub Release](https://img.shields.io/github/v/release/wowitsjack/choochoo-loader?style=for-the-badge&color=blue&label=Latest)](https://github.com/wowitsjack/choochoo-loader/releases/latest)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20|%20Linux%20|%20Steam%20Deck%20|%20macOS-blue?style=for-the-badge&logo=steam)](https://github.com/wowitsjack/choochoo-loader)
+[![License](https://img.shields.io/github/license/wowitsjack/choochoo-loader?style=for-the-badge&color=green)](LICENSE)
+
 **Proton/WINE Trainer & DLL Loader**  
 A loader for SteamOS/Linux/macOS that handles launches of games with trainers/mods (FLiNG, WeMod, etc.), patches, and up to 5 extra executables or DLLs, bypassing the issues of launching mods/patches in WINE/Proton enviroments 🔥.
 
@@ -35,7 +41,7 @@ Running game trainers, patches, and DLL injectors in **Proton** or **WINE** can 
 
 ✅ **Proton/WINE UI Compatibility Fixes** – Prevents common graphical/UI bugs that occur when running trainers in a non-native Windows environment.  
 
-✅ **Seamless Steam Deck Integration** – Works effortlessly with Steam’s Proton compatibility layer, making it easy to add trainers and patches on the go.  
+✅ **Seamless Steam Deck Integration** – Works effortlessly with Steam's Proton compatibility layer, making it easy to add trainers and patches on the go.  
 
 Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**, **ChooChoo** makes sure that your trainers, DLLs, and patches just...work.
 
@@ -57,7 +63,7 @@ Whether you are playing on **Linux**, **macOS (via Whisky)**, or **Steam Deck**,
 ## **Quick Start (Steam Deck)**
 
 1. **Switch to Desktop Mode**  
-   - Tap the Steam Deck’s **Power** button → **Switch to Desktop**.
+   - Tap the Steam Deck's **Power** button → **Switch to Desktop**.
 
 2. **Add ChooChoo to Steam**  
    - Open Steam on your Deck (in Desktop Mode).  
@@ -82,7 +88,7 @@ ln -s ~/.steam/steam/steamapps/common ~/STEAMGAMES
 ```
 ## WeMod/Trainer Not Launching (Fix) (Proton/WINE)  
 
-If trainers like **WeMod** aren’t working, remove **Wine-Mono** and install .NET instead using **Protontricks** or **Heroic Launcher**.  
+If trainers like **WeMod** aren't working, remove **Wine-Mono** and install .NET instead using **Protontricks** or **Heroic Launcher**.  
 
 ### Using Protontricks  
 
@@ -101,7 +107,7 @@ If trainers like **WeMod** aren’t working, remove **Wine-Mono** and install .N
 
 4. Install .NET Framework (if needed)
    - Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.
-   - Download .NET from **Microsoft’s official site**  (You'll want .NET 4.7.1 if you're using WeMod)
+   - Download .NET from **Microsoft's official site**  (You'll want .NET 4.7.1 if you're using WeMod)
    - Inside Protontricks, select **Run Wine File Manager** or **Run EXE** 
    - Run the .NET installer inside the Wine bottle
    - Set your Bottle's Windows Version back to Windows 10 using the Wine Control Panel. 
@@ -136,7 +142,7 @@ Now trainers like **WeMod** should work properly on Steam Deck.
    - Use **"Run Executable"** and pick `ChooChoo.exe` to place it in the bottle.
 
 3. **Configure & Run**  
-   - In the bottle’s settings, enable **DXVK** (and other needed compatibility tweaks).  
+   - In the bottle's settings, enable **DXVK** (and other needed compatibility tweaks).  
    - Press **Run** to start ChooChoo.  
    - Inside ChooChoo, set **Game Path**, **Trainer Path**, and extras.  
    - **Launch** to start your game + trainer simultaneously.
@@ -164,7 +170,7 @@ Now trainers like **WeMod** should work properly on Steam Deck.
 
 <del>Since some trainers require .NET, download and install it manually:</del>  
 
-<del>1. **Download the .NET Framework** from [Microsoft’s official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).</del>  
+<del>1. **Download the .NET Framework** from [Microsoft's official site](https://dotnet.microsoft.com/en-us/download/dotnet-framework).</del>  
 <del>2. Set your Bottle's Windows Version to Windows 7 using the Wine Control Panel.</del>  
 <del>3. Inside Whisky, **run the .NET installer** inside the bottle.</del>  
 <del>4. Follow the installation steps as you would on Windows.</del>  
@@ -187,7 +193,7 @@ Unfortuntely there is nothing the end user can do about this.
 
 - **Decky Loader & SteamGridDB (Optional):**  
   - Install **Decky Loader** on Steam Deck.  
-  - Add **SteamGridDB** plugin → Use it to replace ChooChoo’s artwork with custom images or icons.
+  - Add **SteamGridDB** plugin → Use it to replace ChooChoo's artwork with custom images or icons.
 
 ---
 
