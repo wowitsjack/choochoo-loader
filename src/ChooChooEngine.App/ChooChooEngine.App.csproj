@@ -7,7 +7,7 @@
     <ProjectGuid>{DE4E9A9B-C2D7-4F0C-AE5B-3B8F48F4AE7A}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>ChooChooEngine.App</RootNamespace>
-    <AssemblyName>ChooChooEngine.App</AssemblyName>
+    <AssemblyName>choochoo</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
