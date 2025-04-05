@@ -14,11 +14,9 @@ namespace ChooChooEngine.App.Forms
 {
     public partial class MainForm : Form
     {
-        private bool _tvMode = false;
         private ProcessManager _processManager;
         private InjectionManager _injectionManager;
         private MemoryManager _memoryManager;
-        private ControllerInput _controllerInput;
         private ResumePanel _resumePanel;
         
         // Tab control components
@@ -79,10 +77,6 @@ namespace ChooChooEngine.App.Forms
         // Status strip
         private StatusStrip statusStrip = new StatusStrip();
         private ToolStripStatusLabel statusLabel = new ToolStripStatusLabel();
-        
-        // Track controller button states for combinations
-        private bool _isBackButtonPressed = false;
-        private bool _isStartButtonPressed = false;
         
         // Recent file lists
         private List<string> _recentGamePaths = new List<string>();
@@ -248,45 +242,72 @@ namespace ChooChooEngine.App.Forms
             InitializeManagers();
             
             // Subscribe to events and initialize controls
-            InitializeUIComponents();
-            
-            // Register event handlers for child controls
             RegisterEventHandlers();
             
-            // Load data and populate controls
-            PopulateControls();
+            // Load recent files and profiles
+            LoadRecentFiles();
+            LoadProfiles();
             
-            // Load application settings
+            // Process command line arguments
+            ProcessCommandLineArguments();
+            
+            // Load app settings
             LoadAppSettings();
             
-            // Auto-load last profile if enabled
-            if (_autoLoadLastProfile && !string.IsNullOrEmpty(_lastUsedProfile))
+            // Start resize timer
+            resizeTimer = new Timer();
+            resizeTimer.Interval = 100;
+            resizeTimer.Tick += (s, e) => CheckLayoutMode();
+            
+            // Initial layout check
+            CheckLayoutMode();
+        }
+        
+        private void InitializeManagers()
+        {
+            _processManager = new ProcessManager();
+            _injectionManager = new InjectionManager(_processManager);
+            _memoryManager = new MemoryManager(_processManager);
+            _resumePanel = new ResumePanel();
+            
+            // Subscribe to manager events
+            _processManager.ProcessStarted += ProcessManager_ProcessStarted;
+            _processManager.ProcessStopped += ProcessManager_ProcessStopped;
+            _processManager.ProcessAttached += ProcessManager_ProcessAttached;
+            _processManager.ProcessDetached += ProcessManager_ProcessDetached;
+            
+            _injectionManager.InjectionSucceeded += InjectionManager_InjectionSucceeded;
+            _injectionManager.InjectionFailed += InjectionManager_InjectionFailed;
+            
+            _memoryManager.MemoryOperationSucceeded += MemoryManager_MemoryOperationSucceeded;
+            _memoryManager.MemoryOperationFailed += MemoryManager_MemoryOperationFailed;
+            
+            _resumePanel.Resumed += ResumePanel_Resumed;
+        }
+        
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+
+            // Save settings and recent files
+            SaveAppSettings();
+            SaveRecentFiles();
+
+            // Clean up resources
+            if (_injectionManager != null)
             {
-                // Load profiles first to ensure the list is populated
-                LoadProfiles();
-                
-                if (cmbProfiles.Items.Contains(_lastUsedProfile))
-                {
-                    cmbProfiles.SelectedItem = _lastUsedProfile;
-                    LoadProfile(_lastUsedProfile);
-                    LogToConsole($"Auto-loaded last used profile: {_lastUsedProfile}");
-                }
-                else
-                {
-                    LogToConsole($"Could not find last used profile: {_lastUsedProfile}");
-                }
+                _injectionManager.StopMonitoring();
             }
-            
-            // Update status
-            UpdateStatus("ChooChoo Injection Engine Started");
-            LogToConsole("CHOOCHOO INJECTION ENGINE STARTED");
-            
-            // Add resize handler to manage layout for different sizes
-            this.ResizeEnd += MainForm_ResizeEnd;
-            this.SizeChanged += MainForm_SizeChanged;
-            
-            // Process command line arguments, if any
-            ProcessCommandLineArguments();
+
+            if (_processManager != null)
+            {
+                _processManager.DetachFromProcess();
+            }
+
+            if (_resumePanel != null)
+            {
+                _resumePanel.Dispose();
+            }
         }
         
         private void MainForm_SizeChanged(object sender, EventArgs e)
@@ -468,9 +489,6 @@ namespace ChooChooEngine.App.Forms
             
             // Set selected tab
             tabControl.SelectedTab = tabMain;
-            
-            // Tab change event
-            tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
         }
         
         private void ConfigureUILayout()
@@ -1342,150 +1360,10 @@ namespace ChooChooEngine.App.Forms
             tabMain.Controls.Add(mainLayout);
         }
         
-        private void InitializeManagers()
-        {
-            try
-            {
-                // Create the process manager
-                _processManager = new ProcessManager();
-                
-                // Create the injection manager with process manager
-                _injectionManager = new InjectionManager(_processManager);
-                
-                // Create the memory manager with process manager
-                _memoryManager = new MemoryManager(_processManager);
-                
-                // Create controller input (stubbed)
-                _controllerInput = new ControllerInput();
-                
-                // Start the controller input polling
-                _controllerInput.Start();
-                
-                LogToConsole("Managers initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                LogToConsole($"Error initializing managers: {ex.Message}");
-                MessageBox.Show($"Error initializing application: {ex.Message}", "Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        
-        private void InitializeUIComponents()
-        {
-            // Set the form title and size - larger default size
-            Text = "ChooChoo Injection Engine";
-            Size = new Size(1200, 750); // Increased size to show all elements
-            MinimumSize = new Size(900, 650); // Larger minimum for better visibility
-            
-            // Configure tab control - make it fill the form
-            tabControl.Dock = DockStyle.Fill;
-            tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
-            tabControl.Margin = new Padding(0);
-            tabControl.Padding = new Point(0, 0);
-            
-            // Configure tab pages
-            tabMain.Text = "Main";
-            tabMain.BackColor = Color.FromArgb(30, 30, 30);
-            tabMain.ForeColor = Color.White;
-            tabMain.Padding = new Padding(0);
-            
-            tabHelp.Text = "Help";
-            tabHelp.BackColor = Color.FromArgb(30, 30, 30);
-            tabHelp.ForeColor = Color.White;
-            
-            tabTools.Text = "Tools";
-            tabTools.BackColor = Color.FromArgb(30, 30, 30);
-            tabTools.ForeColor = Color.White;
-            
-            // Clear existing tabs and add our tabs
-            tabControl.TabPages.Clear();
-            tabControl.TabPages.Add(tabMain);
-            tabControl.TabPages.Add(tabHelp);
-            tabControl.TabPages.Add(tabTools);
-            
-            // Add tab control to form
-            Controls.Add(tabControl);
-            tabControl.SelectedTab = tabMain;
-            
-            // Initialize the resume panel
-            _resumePanel = new ResumePanel();
-            _resumePanel.Text = "CLICK TO RESUME";
-            _resumePanel.SubText = "ChooChoo Engine paused";
-            _resumePanel.Visible = false;
-            Controls.Add(_resumePanel);
-            
-            // Default to first radio button checked
-            radCreateProcess.Checked = true;
-        }
-        
-        private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            bool isMainTab = tabControl.SelectedTab == tabMain;
-            
-            // Show/hide UI elements based on selected tab
-            panelPathsProcessSelection.Visible = isMainTab;
-            panelProfiles.Visible = isMainTab;
-            panelLaunchMethods.Visible = isMainTab;
-            txtConsoleOutput.Visible = isMainTab;
-            lstLoadedDlls.Visible = isMainTab;
-            btnLaunch.Visible = isMainTab;
-            
-            // If not on main tab, populate the other tabs
-            if (tabControl.SelectedTab == tabHelp)
-                PopulateHelpTab();
-            else if (tabControl.SelectedTab == tabTools)
-                PopulateToolsTab();
-        }
-        
-        private void PopulateHelpTab()
-        {
-            // This would populate help content in the help tab
-            if (!tabHelp.Controls.Contains(lblHelpContent))
-            {
-                lblHelpContent = new Label
-                {
-                    Text = "CHOOCHOO INJECTION ENGINE HELP\r\n\r\n" +
-                           "1. Select a running process or specify a game executable path\r\n" +
-                           "2. Specify the trainer path\r\n" +
-                           "3. Check Launch/Inject for each DLL you want to inject\r\n" +
-                           "4. Select launch method (optional)\r\n" +
-                           "5. Click Launch to start the process and inject DLLs\r\n\r\n" +
-                           "TV Mode: Press Back + Start on controller to switch to TV mode\r\n" +
-                           "Profiles: Save your configuration for quick loading later",
-                    Location = new Point(20, 20),
-                    Size = new Size(950, 500),
-                    Font = new Font("Segoe UI", 12),
-                    BackColor = Color.FromArgb(40, 40, 40),
-                    ForeColor = Color.White
-                };
-                tabHelp.Controls.Add(lblHelpContent);
-            }
-        }
-        
-        private void PopulateToolsTab()
-        {
-            // This would populate tools content in the tools tab
-            if (!tabTools.Controls.Contains(lblToolsContent))
-            {
-                lblToolsContent = new Label
-                {
-                    Text = "CHOOCHOO INJECTION ENGINE TOOLS\r\n\r\n" +
-                           "Additional tools will be added in future updates.",
-                    Location = new Point(20, 20),
-                    Size = new Size(950, 500),
-                    Font = new Font("Segoe UI", 12),
-                    BackColor = Color.FromArgb(40, 40, 40),
-                    ForeColor = Color.White
-                };
-                tabTools.Controls.Add(lblToolsContent);
-            }
-        }
-        
         private void RegisterEventHandlers()
         {
             // Form events
-            FormClosing += OnFormClosing;
+            FormClosing += (s, e) => OnFormClosing(e);
             KeyDown += OnFormKeyDown;
             
             // Process Manager events
@@ -1501,10 +1379,6 @@ namespace ChooChooEngine.App.Forms
             // Memory Manager events
             _memoryManager.MemoryOperationSucceeded += MemoryManager_MemoryOperationSucceeded;
             _memoryManager.MemoryOperationFailed += MemoryManager_MemoryOperationFailed;
-            
-            // Controller Input events
-            _controllerInput.ButtonPressed += ControllerInput_ButtonPressed;
-            _controllerInput.ButtonReleased += ControllerInput_ButtonReleased;
             
             // Resume Panel events
             if (_resumePanel != null)
@@ -1966,32 +1840,14 @@ namespace ChooChooEngine.App.Forms
             txtConsoleOutput.ScrollToCaret();
         }
         
-        // The rest of the implementation will be added in subsequent edits
-        
         #region Event Handlers
-        
-        private void OnFormClosing(object sender, FormClosingEventArgs e)
-        {
-            // Clean up
-            _controllerInput?.Dispose();
-            
-            // Detach from process
-            if (_processManager.IsProcessRunning)
-            {
-                _processManager.DetachFromProcess();
-            }
-        }
         
         private void OnFormKeyDown(object sender, KeyEventArgs e)
         {
             // Handle keyboard shortcuts
             if (e.Control && e.KeyCode == Keys.T)
             {
-                if (_tvMode)
-                    SwitchToDesktopMode();
-                else
-                    SwitchToTVMode();
-                
+                // TV mode removed
                 e.Handled = true;
             }
         }
@@ -2000,8 +1856,8 @@ namespace ChooChooEngine.App.Forms
         {
             base.OnDeactivate(e);
             
-            // Show click to resume panel when focus is lost in desktop mode
-            if (!_tvMode && _resumePanel != null)
+            // Show click to resume panel when focus is lost
+            if (_resumePanel != null)
             {
                 _resumePanel.Show();
             }
@@ -2011,8 +1867,8 @@ namespace ChooChooEngine.App.Forms
         {
             base.OnActivated(e);
             
-            // Hide click to resume panel when focus is gained in desktop mode
-            if (!_tvMode && _resumePanel != null)
+            // Hide click to resume panel when focus is gained
+            if (_resumePanel != null)
             {
                 _resumePanel.Hide();
             }
@@ -2520,34 +2376,6 @@ namespace ChooChooEngine.App.Forms
         
         #region UI Component Event Handlers
         
-        private void ControllerInput_ButtonPressed(object sender, ControllerButtonEventArgs e)
-        {
-            // Track button states for combinations
-            if (e.Button == ControllerButton.Back)
-                _isBackButtonPressed = true;
-            else if (e.Button == ControllerButton.Start)
-                _isStartButtonPressed = true;
-            
-            // Handle controller button presses in TV mode
-            if (_tvMode)
-            {
-                // Check for Start+Back to exit TV mode
-                if (_isStartButtonPressed && _isBackButtonPressed)
-                {
-                    SwitchToDesktopMode();
-                }
-            }
-        }
-        
-        private void ControllerInput_ButtonReleased(object sender, ControllerButtonEventArgs e)
-        {
-            // Update button states
-            if (e.Button == ControllerButton.Back)
-                _isBackButtonPressed = false;
-            else if (e.Button == ControllerButton.Start)
-                _isStartButtonPressed = false;
-        }
-        
         private void ResumePanel_Resumed(object sender, EventArgs e)
         {
             // Handle resume
@@ -2633,39 +2461,6 @@ namespace ChooChooEngine.App.Forms
             {
                 LogToConsole($"Error getting modules for current environment: {ex.Message}");
             }
-        }
-        
-        public void SwitchToTVMode()
-        {
-            _tvMode = true;
-            
-            // Switch to TV mode
-            FormBorderStyle = FormBorderStyle.None;
-            WindowState = FormWindowState.Maximized;
-            
-            // Initialize controller input
-            _controllerInput.Start();
-            
-            // TODO: Show TV mode UI
-            tabControl.Visible = false;
-            
-            UpdateStatus("TV Mode Active");
-            LogToConsole("TV Mode Activated");
-        }
-        
-        public void SwitchToDesktopMode()
-        {
-            _tvMode = false;
-            
-            // Switch back to desktop mode
-            FormBorderStyle = FormBorderStyle.Sizable;
-            WindowState = FormWindowState.Normal;
-            
-            // TODO: Hide TV mode UI
-            tabControl.Visible = true;
-            
-            UpdateStatus("Desktop Mode Active");
-            LogToConsole("Desktop Mode Activated");
         }
         
         private int ExtractProcessId(string processText)

@@ -1,0 +1,6 @@
+C:\Users\Admin\Documents\GitHub\choochoo-loader\src\ChooChooEngine.App\obj\Release\ChooChooEngine.App.csproj.AssemblyReference.cache
+C:\Users\Admin\Documents\GitHub\choochoo-loader\src\ChooChooEngine.App\obj\Release\ChooChooEngine.App.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Documents\GitHub\choochoo-loader\src\ChooChooEngine.App\bin\Release\choochoo.exe
+C:\Users\Admin\Documents\GitHub\choochoo-loader\src\ChooChooEngine.App\bin\Release\choochoo.pdb
+C:\Users\Admin\Documents\GitHub\choochoo-loader\src\ChooChooEngine.App\obj\Release\choochoo.exe
+C:\Users\Admin\Documents\GitHub\choochoo-loader\src\ChooChooEngine.App\obj\Release\choochoo.pdb
