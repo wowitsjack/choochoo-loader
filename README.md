@@ -218,7 +218,7 @@ Enhanced button mappings for easy menu navigation (e.g., A = Enter, B = Cancel, 
 -autolaunch: Starts the configured game automatically after a short delay.
 -dllinject [Dll1.dll] [Dll2.dll] ...: Injects specified DLLs (up to five), either absolute or relative paths.
 Logs a clear message if any specified DLL doesn't exist or if the limit of five is exceeded.
-
+ 
 🖥️ UI & Stability Improvements
 
 Windows Forms interface: simpler, more intuitive, drastically easier to maintain.
