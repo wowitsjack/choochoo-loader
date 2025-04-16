@@ -2,7 +2,7 @@
 
 [![Download ChooChoo](https://img.shields.io/badge/⬇_Download-ChooChoo_v5.0-00C853?style=for-the-badge)](https://github.com/wowitsjack/choochoo-loader/releases/latest/download/choochoo.exe)
 [![GitHub Release](https://img.shields.io/github/v/release/wowitsjack/choochoo-loader?style=for-the-badge&color=blue&label=Latest)](https://github.com/wowitsjack/choochoo-loader/releases/latest)
-[![Platforms](https://img.shields.io/badge/Platforms-Windows%20|%20Linux%20|%20Steam%20Deck%20|%20macOS-blue?style=for-the-badge&logo=steam)](https://github.com/wowitsjack/choochoo-loader)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20|%20Linux%20|%20Steam%20Deck%20|%20macOS-blue?style=for-the-badge&logo=steam)](https://github.com/wowitsjack/choochoo-loader) 
 [![License](https://img.shields.io/github/license/wowitsjack/choochoo-loader?style=for-the-badge&color=green)](LICENSE)
 
 **Proton/WINE Trainer & DLL Loader**  
